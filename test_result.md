@@ -153,11 +153,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Weight logs and stats working with trend calculation"
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Weight tracking fully functional. Weight logging API accepts new entries, updates existing ones for same date. Stats endpoint correctly calculates evolution (-0.7kg), trend (baisse), and provides complete history."
 
   - task: "Foods CRUD"
     implemented: true
