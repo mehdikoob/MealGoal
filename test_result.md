@@ -183,11 +183,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Admin stats endpoint returns client count and goal distribution"
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Admin stats API functional. Returns total client count (2 users) and goal distribution data. All required admin metrics available."
 
   - task: "Nutritional Rules"
     implemented: true
