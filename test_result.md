@@ -285,9 +285,11 @@ metadata:
 
 test_plan:
   current_focus:
-    - "User Creation with Calorie Calculation"
-    - "Meal Plan Generation"
-    - "Weight Tracking"
+    - "Questionnaire Form (6 steps)"
+    - "User Dashboard"
+    - "Meal Plan Display"
+    - "Weight Tracking Page"
+    - "Admin Dashboard"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
