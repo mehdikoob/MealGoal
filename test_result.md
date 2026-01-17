@@ -123,11 +123,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "User creation works with BMR/TDEE calculation and macro distribution"
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: User creation API working correctly. Calorie calculation accurate (BMR: 1461.25, TDEE: 2264.94, Fat loss target: 1754 calories). Macros properly calculated. Duplicate email handling works (returns 400 error). User retrieval by ID functional."
 
   - task: "Meal Plan Generation"
     implemented: true
