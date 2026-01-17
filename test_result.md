@@ -168,11 +168,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Default foods initialized and CRUD endpoints working"
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Foods API working correctly. Retrieved 19 default foods with proper nutritional data structure (calories, proteins, carbs, fats per 100g). All food categories represented (glucides, proteines, lipides)."
 
   - task: "Admin Dashboard Stats"
     implemented: true
