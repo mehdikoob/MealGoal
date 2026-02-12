@@ -234,6 +234,12 @@ const Navigation = ({ currentUser, onLogout, isAdmin }) => {
               <Icons.Users /> Clients
             </button>
             <button 
+              className={`nav-link ${location.pathname === '/admin/meal-plans' ? 'active' : ''}`}
+              onClick={() => navigate('/admin/meal-plans')}
+            >
+              <Icons.Calendar /> Plans
+            </button>
+            <button 
               className={`nav-link ${location.pathname === '/admin/foods' ? 'active' : ''}`}
               onClick={() => navigate('/admin/foods')}
             >
