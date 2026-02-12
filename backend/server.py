@@ -120,6 +120,10 @@ class Food(BaseModel):
     proteines_100g: float
     glucides_100g: float
     lipides_100g: float
+    petit_dejeuner: bool = True
+    dejeuner: bool = True
+    diner: bool = True
+    collation: bool = True
 
 class FoodResponse(Food):
     id: str
