@@ -301,6 +301,18 @@ frontend:
         agent: "main"
         comment: "Weight input and chart display"
 
+  - task: "Admin Meal Plans Management"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Admin can view, edit, and regenerate meal plans for clients"
+
   - task: "Admin Dashboard"
     implemented: true
     working: true
