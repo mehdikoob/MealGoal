@@ -192,6 +192,42 @@ backend:
         agent: "testing"
         comment: "✅ VERIFIED: Admin stats API functional. Returns total client count (2 users) and goal distribution data. All required admin metrics available."
 
+  - task: "Meal Plan Update API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "PUT /api/meal-plans/{plan_id} for admin modifications"
+
+  - task: "Meal Plan Regenerate API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "POST /api/meal-plans/{user_id}/regenerate to recreate a plan"
+
+  - task: "Foods with Meal Time Restrictions"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Foods now have petit_dejeuner, dejeuner, diner, collation flags"
+
   - task: "Nutritional Rules"
     implemented: true
     working: true
