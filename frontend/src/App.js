@@ -2198,6 +2198,7 @@ function App() {
               <>
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/admin/users" element={<AdminUsers />} />
+                <Route path="/admin/meal-plans" element={<AdminMealPlans />} />
                 <Route path="/admin/foods" element={<AdminFoods />} />
               </>
             )}
