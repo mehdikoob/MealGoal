@@ -661,16 +661,99 @@ async def create_meal_plan(user_id: str, target_date: str = Query(default=None))
     return meal_plan
 
 @app.get("/api/meal-plans/{user_id}")
-async def get_meal_plans(user_id: str, date_from: str = None, date_to: str = None):
-    """Get meal plans for a user"""
+async def get_meal_plans(user_id: str, date_from: str = None, date_to: str = None, limit: int = 30):
+    """Get meal plans for a user with history"""
     query = {"user_id": user_id}
     if date_from and date_to:
         query["date"] = {"$gte": date_from, "$lte": date_to}
     elif date_from:
         query["date"] = {"$gte": date_from}
     
-    plans = list(meal_plans_collection.find(query, {"_id": 0}).sort("date", -1))
+    plans = list(meal_plans_collection.find(query, {"_id": 0}).sort("date", -1).limit(limit))
     return plans
+
+@app.put("/api/meal-plans/{plan_id}")
+async def update_meal_plan(plan_id: str, updated_plan: dict):
+    """Update a meal plan (admin modification)"""
+    existing = meal_plans_collection.find_one({"id": plan_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Plan alimentaire non trouvé")
+    
+    # Recalculate totals from meals
+    total_calories = 0
+    total_proteines = 0
+    total_glucides = 0
+    total_lipides = 0
+    
+    for meal in updated_plan.get("meals", []):
+        meal_cal = 0
+        meal_prot = 0
+        meal_carb = 0
+        meal_fat = 0
+        
+        for item in meal.get("items", []):
+            meal_cal += item.get("calories", 0)
+            meal_prot += item.get("proteines", 0)
+            meal_carb += item.get("glucides", 0)
+            meal_fat += item.get("lipides", 0)
+        
+        meal["total_calories"] = round(meal_cal, 1)
+        meal["total_proteines"] = round(meal_prot, 1)
+        meal["total_glucides"] = round(meal_carb, 1)
+        meal["total_lipides"] = round(meal_fat, 1)
+        
+        total_calories += meal_cal
+        total_proteines += meal_prot
+        total_glucides += meal_carb
+        total_lipides += meal_fat
+    
+    updated_plan["total_calories"] = round(total_calories, 1)
+    updated_plan["total_proteines"] = round(total_proteines, 1)
+    updated_plan["total_glucides"] = round(total_glucides, 1)
+    updated_plan["total_lipides"] = round(total_lipides, 1)
+    updated_plan["modified_at"] = datetime.now().isoformat()
+    updated_plan["modified_by_admin"] = True
+    
+    # Preserve original fields
+    updated_plan["id"] = plan_id
+    updated_plan["user_id"] = existing["user_id"]
+    updated_plan["date"] = existing["date"]
+    updated_plan["created_at"] = existing["created_at"]
+    updated_plan["objectif_calories"] = existing["objectif_calories"]
+    updated_plan["objectif_proteines"] = existing["objectif_proteines"]
+    updated_plan["objectif_glucides"] = existing["objectif_glucides"]
+    updated_plan["objectif_lipides"] = existing["objectif_lipides"]
+    
+    meal_plans_collection.update_one({"id": plan_id}, {"$set": updated_plan})
+    updated_plan.pop("_id", None)
+    return updated_plan
+
+@app.delete("/api/meal-plans/{plan_id}")
+async def delete_meal_plan(plan_id: str):
+    """Delete a meal plan"""
+    result = meal_plans_collection.delete_one({"id": plan_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Plan alimentaire non trouvé")
+    return {"message": "Plan supprimé"}
+
+@app.post("/api/meal-plans/{user_id}/regenerate")
+async def regenerate_meal_plan(user_id: str, target_date: str = Query(default=None)):
+    """Regenerate a meal plan for a specific date"""
+    user = users_collection.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    if not target_date:
+        target_date = date.today().isoformat()
+    
+    # Delete existing plan for this date
+    meal_plans_collection.delete_one({"user_id": user_id, "date": target_date})
+    
+    # Generate new plan
+    meal_plan = generate_meal_plan(user, target_date)
+    meal_plans_collection.insert_one(meal_plan)
+    meal_plan.pop("_id", None)
+    return meal_plan
 
 @app.get("/api/meal-plans/{user_id}/today")
 async def get_today_meal_plan(user_id: str):
