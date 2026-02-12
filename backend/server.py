@@ -226,29 +226,34 @@ def init_default_foods():
     if foods_collection.count_documents({}) == 0:
         default_foods = [
             # Glucides
-            {"id": str(uuid.uuid4()), "nom": "Pâtes (cuites)", "categorie": "glucides", "calories_100g": 131, "proteines_100g": 5, "glucides_100g": 25, "lipides_100g": 1.1},
-            {"id": str(uuid.uuid4()), "nom": "Riz blanc (cuit)", "categorie": "glucides", "calories_100g": 130, "proteines_100g": 2.7, "glucides_100g": 28, "lipides_100g": 0.3},
-            {"id": str(uuid.uuid4()), "nom": "Flocons d'avoine", "categorie": "glucides", "calories_100g": 379, "proteines_100g": 13.5, "glucides_100g": 67.7, "lipides_100g": 6.5},
-            {"id": str(uuid.uuid4()), "nom": "Pommes de terre (cuites)", "categorie": "glucides", "calories_100g": 87, "proteines_100g": 1.9, "glucides_100g": 20.1, "lipides_100g": 0.1},
-            {"id": str(uuid.uuid4()), "nom": "Patate douce (cuite)", "categorie": "glucides", "calories_100g": 90, "proteines_100g": 2, "glucides_100g": 20.7, "lipides_100g": 0.1},
-            {"id": str(uuid.uuid4()), "nom": "Pain complet", "categorie": "glucides", "calories_100g": 247, "proteines_100g": 13, "glucides_100g": 41, "lipides_100g": 3.4},
+            {"id": str(uuid.uuid4()), "nom": "Pâtes (cuites)", "categorie": "glucides", "calories_100g": 131, "proteines_100g": 5, "glucides_100g": 25, "lipides_100g": 1.1, "petit_dejeuner": False, "dejeuner": True, "diner": True, "collation": False},
+            {"id": str(uuid.uuid4()), "nom": "Riz blanc (cuit)", "categorie": "glucides", "calories_100g": 130, "proteines_100g": 2.7, "glucides_100g": 28, "lipides_100g": 0.3, "petit_dejeuner": False, "dejeuner": True, "diner": True, "collation": False},
+            {"id": str(uuid.uuid4()), "nom": "Flocons d'avoine", "categorie": "glucides", "calories_100g": 379, "proteines_100g": 13.5, "glucides_100g": 67.7, "lipides_100g": 6.5, "petit_dejeuner": True, "dejeuner": False, "diner": False, "collation": True},
+            {"id": str(uuid.uuid4()), "nom": "Pommes de terre (cuites)", "categorie": "glucides", "calories_100g": 87, "proteines_100g": 1.9, "glucides_100g": 20.1, "lipides_100g": 0.1, "petit_dejeuner": False, "dejeuner": True, "diner": True, "collation": False},
+            {"id": str(uuid.uuid4()), "nom": "Patate douce (cuite)", "categorie": "glucides", "calories_100g": 90, "proteines_100g": 2, "glucides_100g": 20.7, "lipides_100g": 0.1, "petit_dejeuner": False, "dejeuner": True, "diner": True, "collation": False},
+            {"id": str(uuid.uuid4()), "nom": "Pain complet", "categorie": "glucides", "calories_100g": 247, "proteines_100g": 13, "glucides_100g": 41, "lipides_100g": 3.4, "petit_dejeuner": True, "dejeuner": True, "diner": False, "collation": True},
+            {"id": str(uuid.uuid4()), "nom": "Banane", "categorie": "glucides", "calories_100g": 89, "proteines_100g": 1.1, "glucides_100g": 22.8, "lipides_100g": 0.3, "petit_dejeuner": True, "dejeuner": False, "diner": False, "collation": True},
+            {"id": str(uuid.uuid4()), "nom": "Pomme", "categorie": "glucides", "calories_100g": 52, "proteines_100g": 0.3, "glucides_100g": 14, "lipides_100g": 0.2, "petit_dejeuner": True, "dejeuner": False, "diner": False, "collation": True},
+            {"id": str(uuid.uuid4()), "nom": "Miel", "categorie": "glucides", "calories_100g": 304, "proteines_100g": 0.3, "glucides_100g": 82, "lipides_100g": 0, "petit_dejeuner": True, "dejeuner": False, "diner": False, "collation": True},
             
             # Protéines
-            {"id": str(uuid.uuid4()), "nom": "Poulet (blanc)", "categorie": "proteines", "calories_100g": 165, "proteines_100g": 31, "glucides_100g": 0, "lipides_100g": 3.6},
-            {"id": str(uuid.uuid4()), "nom": "Boeuf haché 5%", "categorie": "proteines", "calories_100g": 137, "proteines_100g": 21, "glucides_100g": 0, "lipides_100g": 5},
-            {"id": str(uuid.uuid4()), "nom": "Oeufs entiers", "categorie": "proteines", "calories_100g": 155, "proteines_100g": 13, "glucides_100g": 1.1, "lipides_100g": 11},
-            {"id": str(uuid.uuid4()), "nom": "Blanc d'oeuf", "categorie": "proteines", "calories_100g": 52, "proteines_100g": 11, "glucides_100g": 0.7, "lipides_100g": 0.2},
-            {"id": str(uuid.uuid4()), "nom": "Cabillaud", "categorie": "proteines", "calories_100g": 82, "proteines_100g": 18, "glucides_100g": 0, "lipides_100g": 0.7},
-            {"id": str(uuid.uuid4()), "nom": "Colin", "categorie": "proteines", "calories_100g": 85, "proteines_100g": 19, "glucides_100g": 0, "lipides_100g": 0.8},
-            {"id": str(uuid.uuid4()), "nom": "Whey protéine", "categorie": "proteines", "calories_100g": 400, "proteines_100g": 80, "glucides_100g": 8, "lipides_100g": 6},
-            {"id": str(uuid.uuid4()), "nom": "Skyr", "categorie": "proteines", "calories_100g": 63, "proteines_100g": 11, "glucides_100g": 4, "lipides_100g": 0.2},
+            {"id": str(uuid.uuid4()), "nom": "Poulet (blanc)", "categorie": "proteines", "calories_100g": 165, "proteines_100g": 31, "glucides_100g": 0, "lipides_100g": 3.6, "petit_dejeuner": False, "dejeuner": True, "diner": True, "collation": False},
+            {"id": str(uuid.uuid4()), "nom": "Boeuf haché 5%", "categorie": "proteines", "calories_100g": 137, "proteines_100g": 21, "glucides_100g": 0, "lipides_100g": 5, "petit_dejeuner": False, "dejeuner": True, "diner": True, "collation": False},
+            {"id": str(uuid.uuid4()), "nom": "Oeufs entiers", "categorie": "proteines", "calories_100g": 155, "proteines_100g": 13, "glucides_100g": 1.1, "lipides_100g": 11, "petit_dejeuner": True, "dejeuner": True, "diner": True, "collation": False},
+            {"id": str(uuid.uuid4()), "nom": "Blanc d'oeuf", "categorie": "proteines", "calories_100g": 52, "proteines_100g": 11, "glucides_100g": 0.7, "lipides_100g": 0.2, "petit_dejeuner": True, "dejeuner": True, "diner": True, "collation": False},
+            {"id": str(uuid.uuid4()), "nom": "Cabillaud", "categorie": "proteines", "calories_100g": 82, "proteines_100g": 18, "glucides_100g": 0, "lipides_100g": 0.7, "petit_dejeuner": False, "dejeuner": True, "diner": True, "collation": False},
+            {"id": str(uuid.uuid4()), "nom": "Colin", "categorie": "proteines", "calories_100g": 85, "proteines_100g": 19, "glucides_100g": 0, "lipides_100g": 0.8, "petit_dejeuner": False, "dejeuner": True, "diner": True, "collation": False},
+            {"id": str(uuid.uuid4()), "nom": "Whey protéine", "categorie": "proteines", "calories_100g": 400, "proteines_100g": 80, "glucides_100g": 8, "lipides_100g": 6, "petit_dejeuner": True, "dejeuner": False, "diner": False, "collation": True},
+            {"id": str(uuid.uuid4()), "nom": "Skyr", "categorie": "proteines", "calories_100g": 63, "proteines_100g": 11, "glucides_100g": 4, "lipides_100g": 0.2, "petit_dejeuner": True, "dejeuner": False, "diner": False, "collation": True},
+            {"id": str(uuid.uuid4()), "nom": "Fromage blanc 0%", "categorie": "proteines", "calories_100g": 45, "proteines_100g": 8, "glucides_100g": 4, "lipides_100g": 0.1, "petit_dejeuner": True, "dejeuner": False, "diner": False, "collation": True},
             
             # Lipides
-            {"id": str(uuid.uuid4()), "nom": "Amandes", "categorie": "lipides", "calories_100g": 579, "proteines_100g": 21, "glucides_100g": 22, "lipides_100g": 49},
-            {"id": str(uuid.uuid4()), "nom": "Noix", "categorie": "lipides", "calories_100g": 654, "proteines_100g": 15, "glucides_100g": 14, "lipides_100g": 65},
-            {"id": str(uuid.uuid4()), "nom": "Huile d'olive", "categorie": "lipides", "calories_100g": 884, "proteines_100g": 0, "glucides_100g": 0, "lipides_100g": 100},
-            {"id": str(uuid.uuid4()), "nom": "Beurre de cacahuète", "categorie": "lipides", "calories_100g": 588, "proteines_100g": 25, "glucides_100g": 20, "lipides_100g": 50},
-            {"id": str(uuid.uuid4()), "nom": "Huile de coco", "categorie": "lipides", "calories_100g": 862, "proteines_100g": 0, "glucides_100g": 0, "lipides_100g": 100},
+            {"id": str(uuid.uuid4()), "nom": "Amandes", "categorie": "lipides", "calories_100g": 579, "proteines_100g": 21, "glucides_100g": 22, "lipides_100g": 49, "petit_dejeuner": True, "dejeuner": True, "diner": True, "collation": True},
+            {"id": str(uuid.uuid4()), "nom": "Noix", "categorie": "lipides", "calories_100g": 654, "proteines_100g": 15, "glucides_100g": 14, "lipides_100g": 65, "petit_dejeuner": True, "dejeuner": True, "diner": True, "collation": True},
+            {"id": str(uuid.uuid4()), "nom": "Huile d'olive", "categorie": "lipides", "calories_100g": 884, "proteines_100g": 0, "glucides_100g": 0, "lipides_100g": 100, "petit_dejeuner": False, "dejeuner": True, "diner": True, "collation": False},
+            {"id": str(uuid.uuid4()), "nom": "Beurre de cacahuète", "categorie": "lipides", "calories_100g": 588, "proteines_100g": 25, "glucides_100g": 20, "lipides_100g": 50, "petit_dejeuner": True, "dejeuner": False, "diner": False, "collation": True},
+            {"id": str(uuid.uuid4()), "nom": "Huile de coco", "categorie": "lipides", "calories_100g": 862, "proteines_100g": 0, "glucides_100g": 0, "lipides_100g": 100, "petit_dejeuner": False, "dejeuner": True, "diner": True, "collation": False},
+            {"id": str(uuid.uuid4()), "nom": "Avocat", "categorie": "lipides", "calories_100g": 160, "proteines_100g": 2, "glucides_100g": 9, "lipides_100g": 15, "petit_dejeuner": True, "dejeuner": True, "diner": True, "collation": True},
         ]
         foods_collection.insert_many(default_foods)
 
