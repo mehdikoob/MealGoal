@@ -1704,3 +1704,456 @@ body {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* Admin Meal Plans */
+.admin-meal-plans {
+  padding: 48px 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.admin-meal-plans h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 32px;
+}
+
+.meal-plans-layout {
+  display: grid;
+  grid-template-columns: 250px 200px 1fr;
+  gap: 24px;
+  min-height: 600px;
+}
+
+.users-sidebar,
+.plans-sidebar {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  padding: 20px;
+  height: fit-content;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.users-sidebar h3,
+.plans-sidebar h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+}
+
+.users-list,
+.plans-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.user-item,
+.plan-item {
+  padding: 12px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.user-item:hover,
+.plan-item:hover {
+  background: var(--bg-section);
+}
+
+.user-item.selected,
+.plan-item.selected {
+  background: rgba(0, 128, 255, 0.1);
+  border-color: var(--brand-primary);
+}
+
+.user-name {
+  display: block;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.user-objective {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.plan-date {
+  display: block;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.plan-calories {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.modified-badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 6px;
+  background: rgba(255, 152, 0, 0.1);
+  color: var(--color-fats);
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.no-plans,
+.select-user {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 20px;
+}
+
+.plan-detail {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.plan-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.plan-detail-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.plan-summary-admin {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg-section);
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.summary-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summary-stat .label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.summary-stat .value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.meals-edit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.meal-edit-card {
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.meal-edit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: var(--bg-section);
+}
+
+.meal-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.meal-info .meal-time {
+  font-weight: 600;
+  color: var(--brand-primary);
+}
+
+.meal-info .meal-name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.btn-edit-meal {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(0, 128, 255, 0.1);
+  color: var(--brand-primary);
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-edit-meal:hover {
+  background: rgba(0, 128, 255, 0.2);
+}
+
+.btn-edit-meal svg {
+  width: 14px;
+  height: 14px;
+}
+
+.meal-items-preview {
+  padding: 16px;
+}
+
+.item-preview {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.item-preview:last-child {
+  border-bottom: none;
+}
+
+.item-preview .item-name {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.item-preview .item-qty {
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.meal-totals {
+  display: flex;
+  gap: 16px;
+  padding: 12px 16px;
+  background: var(--bg-section);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.no-plan-selected {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.no-plan-selected svg {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+/* Edit Meal Modal */
+.modal-large {
+  max-width: 700px;
+}
+
+.edit-meal-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.edit-item-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  background: var(--bg-section);
+  border-radius: 10px;
+}
+
+.edit-item-row .item-name {
+  flex: 1;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.item-quantity-input {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.item-quantity-input input {
+  width: 80px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-medium);
+  border-radius: 8px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.item-quantity-input span {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.item-macros-preview {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.btn-remove-item {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-remove-item:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.btn-remove-item svg {
+  width: 16px;
+  height: 16px;
+}
+
+.add-food-section {
+  padding: 16px;
+  background: var(--bg-section);
+  border-radius: 12px;
+}
+
+.add-food-section h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.add-food-section select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border-medium);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+
+/* Meal Tags */
+.meal-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.meal-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: rgba(0, 128, 255, 0.1);
+  color: var(--brand-primary);
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+/* Checkbox Pills */
+.checkbox-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.checkbox-pill {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  border: 1px solid var(--border-light);
+  border-radius: 100px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.checkbox-pill input {
+  display: none;
+}
+
+.checkbox-pill:hover {
+  border-color: var(--border-medium);
+}
+
+.checkbox-pill.active {
+  background: rgba(0, 128, 255, 0.1);
+  border-color: var(--brand-primary);
+  color: var(--brand-primary);
+}
+
+/* Responsive for meal plans */
+@media (max-width: 1199px) {
+  .meal-plans-layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .users-sidebar,
+  .plans-sidebar {
+    max-height: 300px;
+  }
+}
+
+@media (max-width: 809px) {
+  .admin-meal-plans {
+    padding: 24px 16px;
+  }
+  
+  .plan-summary-admin {
+    flex-wrap: wrap;
+  }
+  
+  .edit-item-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .item-macros-preview {
+    flex-wrap: wrap;
+  }
+}
+
