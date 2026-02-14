@@ -1454,6 +1454,13 @@ const AdminUsers = () => {
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({
+    objectif: '',
+    niveau_activite: '',
+    poids_actuel: ''
+  });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchUsers();
