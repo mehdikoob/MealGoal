@@ -639,6 +639,24 @@ async def update_user(user_id: str, user: UserProfile):
     
     return UserProfileResponse(**user_data)
 
+@app.delete("/api/users/{user_id}")
+async def delete_user(user_id: str):
+    """Delete a user and all associated data"""
+    existing = users_collection.find_one({"id": user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    # Delete user
+    users_collection.delete_one({"id": user_id})
+    
+    # Delete associated weight logs
+    weight_logs_collection.delete_many({"user_id": user_id})
+    
+    # Delete associated meal plans
+    meal_plans_collection.delete_many({"user_id": user_id})
+    
+    return {"message": "Utilisateur et données associées supprimés"}
+
 @app.get("/api/users")
 async def list_users():
     """List all users (admin)"""
