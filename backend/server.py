@@ -918,47 +918,134 @@ async def delete_food(food_id: str):
 
 @app.get("/api/admin/stats")
 async def get_admin_stats():
-    """Get admin dashboard statistics"""
+    """Get comprehensive admin dashboard statistics"""
+    from datetime import timedelta
+    
+    today = date.today()
+    two_weeks_ago = (today - timedelta(days=14)).isoformat()
+    one_month_ago = (today - timedelta(days=30)).isoformat()
+    one_week_ago = (today - timedelta(days=7)).isoformat()
+    
+    # Basic counts
     total_users = users_collection.count_documents({})
+    users = list(users_collection.find({}, {"_id": 0}))
     
-    # Get weight stats
-    pipeline = [
-        {"$group": {
-            "_id": "$user_id",
-            "first_weight": {"$first": "$poids_kg"},
-            "last_weight": {"$last": "$poids_kg"}
-        }}
-    ]
+    # New clients this month
+    new_clients_month = users_collection.count_documents({
+        "created_at": {"$gte": one_month_ago}
+    })
     
-    weight_changes = list(weight_logs_collection.aggregate(pipeline))
-    
-    total_weight_lost = 0
-    total_weight_gained = 0
-    users_losing = 0
-    users_gaining = 0
-    
-    for wc in weight_changes:
-        change = wc["last_weight"] - wc["first_weight"]
-        if change < 0:
-            total_weight_lost += abs(change)
-            users_losing += 1
-        elif change > 0:
-            total_weight_gained += change
-            users_gaining += 1
-    
-    # Get goal distribution
+    # Goal distribution
     goal_pipeline = [
         {"$group": {"_id": "$objectif", "count": {"$sum": 1}}}
     ]
     goal_distribution = list(users_collection.aggregate(goal_pipeline))
     
+    # Analyze each client
+    clients_needing_followup = []  # No weigh-in for 14+ days
+    clients_on_track = []  # Progressing well
+    clients_struggling = []  # Not progressing as expected
+    clients_success = []  # Reached their goal
+    recent_weigh_ins = []  # Last 7 days
+    recent_registrations = []  # Last 7 days
+    
+    for user in users:
+        user_id = user["id"]
+        logs = list(weight_logs_collection.find({"user_id": user_id}, {"_id": 0}).sort("date", 1))
+        
+        user_summary = {
+            "id": user_id,
+            "nom": user["nom"],
+            "prenom": user["prenom"],
+            "objectif": user["objectif"],
+            "poids_initial": user["poids_initial_kg"],
+            "calories": user["calories_journalieres"]
+        }
+        
+        if logs:
+            last_log = logs[-1]
+            first_log = logs[0]
+            user_summary["poids_actuel"] = last_log["poids_kg"]
+            user_summary["derniere_pesee"] = last_log["date"]
+            user_summary["evolution"] = round(last_log["poids_kg"] - first_log["poids_kg"], 1)
+            user_summary["nombre_pesees"] = len(logs)
+            
+            # Check if needs follow-up (no weigh-in for 14+ days)
+            if last_log["date"] < two_weeks_ago:
+                days_since = (today - date.fromisoformat(last_log["date"])).days
+                user_summary["jours_sans_pesee"] = days_since
+                clients_needing_followup.append(user_summary)
+            
+            # Check recent weigh-ins (last 7 days)
+            if last_log["date"] >= one_week_ago:
+                recent_weigh_ins.append({
+                    **user_summary,
+                    "date_pesee": last_log["date"],
+                    "poids": last_log["poids_kg"]
+                })
+            
+            # Analyze progression based on goal
+            evolution = last_log["poids_kg"] - first_log["poids_kg"]
+            objectif = user["objectif"]
+            
+            if objectif == "perte_de_gras":
+                if evolution <= -2:  # Lost 2kg or more = on track
+                    clients_on_track.append(user_summary)
+                elif evolution >= 0:  # Gained or stable = struggling
+                    clients_struggling.append(user_summary)
+                if evolution <= -5:  # Lost 5kg+ = success
+                    clients_success.append(user_summary)
+            elif objectif == "prise_de_muscle":
+                if evolution >= 2:  # Gained 2kg or more = on track
+                    clients_on_track.append(user_summary)
+                elif evolution <= 0:  # Lost or stable = struggling
+                    clients_struggling.append(user_summary)
+                if evolution >= 5:  # Gained 5kg+ = success
+                    clients_success.append(user_summary)
+            else:  # Maintien
+                if abs(evolution) <= 1:  # Stable within 1kg = on track
+                    clients_on_track.append(user_summary)
+                else:
+                    clients_struggling.append(user_summary)
+        else:
+            user_summary["poids_actuel"] = user["poids_initial_kg"]
+            user_summary["derniere_pesee"] = None
+            user_summary["evolution"] = 0
+            user_summary["nombre_pesees"] = 0
+            user_summary["jours_sans_pesee"] = (today - date.fromisoformat(user.get("date_demarrage", today.isoformat()))).days
+            if user_summary["jours_sans_pesee"] > 0:
+                clients_needing_followup.append(user_summary)
+        
+        # Check recent registrations
+        if user.get("created_at", "") >= one_week_ago:
+            recent_registrations.append(user_summary)
+    
+    # Sort lists
+    clients_needing_followup.sort(key=lambda x: x.get("jours_sans_pesee", 0), reverse=True)
+    recent_weigh_ins.sort(key=lambda x: x.get("date_pesee", ""), reverse=True)
+    
     return {
-        "total_clients": total_users,
-        "poids_moyen_perdu": round(total_weight_lost / max(users_losing, 1), 1),
-        "poids_moyen_gagne": round(total_weight_gained / max(users_gaining, 1), 1),
-        "clients_en_perte": users_losing,
-        "clients_en_prise": users_gaining,
-        "distribution_objectifs": {item["_id"]: item["count"] for item in goal_distribution}
+        "overview": {
+            "total_clients": total_users,
+            "nouveaux_ce_mois": new_clients_month,
+            "en_attente_pesee": len(clients_needing_followup),
+            "en_bonne_voie": len(clients_on_track),
+            "en_difficulte": len(clients_struggling),
+            "objectif_atteint": len(clients_success)
+        },
+        "distribution_objectifs": {item["_id"]: item["count"] for item in goal_distribution},
+        "alertes": {
+            "clients_a_relancer": clients_needing_followup[:10],  # Top 10
+            "clients_en_difficulte": clients_struggling[:5]
+        },
+        "progression": {
+            "en_bonne_voie": clients_on_track[:5],
+            "succes": clients_success[:5]
+        },
+        "activite_recente": {
+            "dernieres_pesees": recent_weigh_ins[:8],
+            "nouveaux_clients": recent_registrations[:5]
+        }
     }
 
 @app.get("/api/admin/users")
