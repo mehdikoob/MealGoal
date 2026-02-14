@@ -2148,17 +2148,23 @@ function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+  const [theme, setTheme] = useState('light');
 
   useEffect(() => {
     // Check for saved user in localStorage
     const savedUser = localStorage.getItem('mealgoal_user');
     const savedAdmin = localStorage.getItem('mealgoal_admin');
+    const savedTheme = localStorage.getItem('mealgoal_theme');
     
     if (savedUser) {
       setCurrentUser(JSON.parse(savedUser));
     }
     if (savedAdmin === 'true') {
       setIsAdmin(true);
+    }
+    if (savedTheme) {
+      setTheme(savedTheme);
+      document.documentElement.setAttribute('data-theme', savedTheme);
     }
   }, []);
 
@@ -2180,6 +2186,13 @@ function App() {
     localStorage.setItem('mealgoal_admin', 'true');
   };
 
+  const handleToggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('mealgoal_theme', newTheme);
+  };
+
   return (
     <Router>
       <div className="app">
@@ -2187,6 +2200,8 @@ function App() {
           currentUser={currentUser} 
           onLogout={handleLogout}
           isAdmin={isAdmin}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
         />
         
         <main className="main-content">
