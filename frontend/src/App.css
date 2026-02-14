@@ -2053,6 +2053,18 @@ body {
   .admin-foods-header button {
     width: 100%;
   }
+  
+  .user-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .detail-section.full-width {
+    grid-column: span 1;
+  }
+  
+  .pref-group {
+    flex-direction: column;
+  }
 }
 
 @media (min-width: 810px) and (max-width: 1199px) {
