@@ -58,6 +58,45 @@
   --gradient-button: linear-gradient(168deg, rgb(0, 128, 255) -63%, rgb(0, 90, 180) 100%);
 }
 
+/* Dark mode specific adjustments */
+[data-theme="dark"] .stat-card {
+  background: var(--bg-card);
+}
+
+[data-theme="dark"] .stat-card.primary {
+  background: var(--gradient-button);
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-medium);
+}
+
+[data-theme="dark"] input::placeholder {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .modal-content {
+  background: var(--bg-card);
+}
+
+[data-theme="dark"] .questionnaire-card {
+  background: var(--bg-card);
+}
+
+[data-theme="dark"] .recharts-cartesian-grid-horizontal line,
+[data-theme="dark"] .recharts-cartesian-grid-vertical line {
+  stroke: var(--border-light);
+}
+
+[data-theme="dark"] .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: var(--bg-card) !important;
+  border-color: var(--border-medium) !important;
+}
+
 /* Reset & Base */
 * {
   margin: 0;
