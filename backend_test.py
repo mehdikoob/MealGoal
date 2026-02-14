@@ -11,7 +11,7 @@ from datetime import datetime, date
 import sys
 
 # Base URL from frontend environment
-BASE_URL = "https://mealgoal.preview.emergentagent.com/api"
+BASE_URL = "https://macro-planner-5.preview.emergentagent.com/api"
 
 class MealGoalTester:
     def __init__(self):
