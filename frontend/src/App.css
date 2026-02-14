@@ -31,6 +31,31 @@
   --color-protein: #4CAF50;
   --color-carbs: #2196F3;
   --color-fats: #FF9800;
+  
+  /* Transitions */
+  --transition-theme: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Dark Mode */
+[data-theme="dark"] {
+  /* Backgrounds */
+  --bg-page: #0f0f0f;
+  --bg-card: #1a1a1a;
+  --bg-section: rgba(40, 40, 40, 0.5);
+  
+  /* Text */
+  --text-primary: rgb(245, 245, 245);
+  --text-secondary: rgb(170, 170, 170);
+  --text-muted: rgb(130, 130, 130);
+  
+  /* Borders */
+  --border-light: rgba(255, 255, 255, 0.1);
+  --border-medium: rgba(255, 255, 255, 0.15);
+  --border-strong: rgba(255, 255, 255, 0.2);
+  
+  /* Gradients */
+  --gradient-hero: linear-gradient(135deg, rgba(30, 20, 40, 0.9) 0%, rgba(40, 20, 35, 0.9) 25%, rgba(20, 30, 45, 0.9) 50%, rgba(40, 30, 20, 0.9) 75%, rgba(30, 20, 40, 0.9) 100%);
+  --gradient-button: linear-gradient(168deg, rgb(0, 128, 255) -63%, rgb(0, 90, 180) 100%);
 }
 
 /* Reset & Base */
