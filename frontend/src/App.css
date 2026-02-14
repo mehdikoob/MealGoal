@@ -3495,13 +3495,28 @@ body {
 }
 
 .food-card-macros {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
   padding: 12px;
   background: var(--bg-section);
   border-radius: 10px;
   margin-bottom: 12px;
+}
+
+.macros-header {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.macros-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .food-card-macros .macro-item {
