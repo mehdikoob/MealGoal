@@ -72,6 +72,7 @@ body {
   background: var(--bg-page);
   color: var(--text-primary);
   line-height: 1.5;
+  transition: var(--transition-theme);
 }
 
 .app {
