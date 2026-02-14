@@ -762,6 +762,15 @@ body {
   color: rgba(255, 255, 255, 0.8);
 }
 
+.stat-card.primary .stat-value {
+  color: white;
+}
+
+.stat-card.primary .stat-icon {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
 /* Dashboard Grid */
 .dashboard-grid {
   display: grid;
