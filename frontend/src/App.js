@@ -1833,10 +1833,138 @@ const AdminUsers = () => {
                 className="btn-danger" 
                 onClick={() => handleDeleteUser(selectedUser.id, `${selectedUser.prenom} ${selectedUser.nom}`)}
               >
-                <Icons.Trash /> Supprimer ce client
+                <Icons.Trash /> Supprimer
+              </button>
+              <button className="btn-primary" onClick={() => handleEditProgram(selectedUser)}>
+                <Icons.Edit /> Modifier le programme
               </button>
               <button className="btn-secondary" onClick={() => setShowDetailModal(false)}>
                 Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Program Modal */}
+      {showEditModal && selectedUser && (
+        <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+          <div className="modal-content modal-edit-program" onClick={e => e.stopPropagation()}>
+            <h2>Modifier le programme</h2>
+            <p className="modal-subtitle">
+              Client : <strong>{selectedUser.prenom} {selectedUser.nom}</strong>
+            </p>
+            
+            <div className="program-evolution-card">
+              <div className="current-program">
+                <span className="program-label">Programme actuel</span>
+                <div className="program-info">
+                  <span className={`objective-badge-large ${selectedUser.objectif}`}>
+                    {getObjectifIcon(selectedUser.objectif)}
+                    {selectedUser.objectif === 'perte_de_gras' ? 'Perte de gras' :
+                     selectedUser.objectif === 'maintien' ? 'Maintien' : 'Prise de muscle'}
+                  </span>
+                  <span className="calories-current">{selectedUser.calories_journalieres} kcal/jour</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="edit-program-form">
+              <div className="form-group">
+                <label>Nouvel objectif</label>
+                <div className="objective-selector">
+                  <label className={`objective-option ${editForm.objectif === 'perte_de_gras' ? 'selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="objectif"
+                      value="perte_de_gras"
+                      checked={editForm.objectif === 'perte_de_gras'}
+                      onChange={e => setEditForm({...editForm, objectif: e.target.value})}
+                    />
+                    <Icons.TrendingDown />
+                    <div className="option-content">
+                      <span className="option-title">Perte de gras</span>
+                      <span className="option-desc">Déficit calorique -20%</span>
+                    </div>
+                  </label>
+                  <label className={`objective-option ${editForm.objectif === 'maintien' ? 'selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="objectif"
+                      value="maintien"
+                      checked={editForm.objectif === 'maintien'}
+                      onChange={e => setEditForm({...editForm, objectif: e.target.value})}
+                    />
+                    <Icons.Target />
+                    <div className="option-content">
+                      <span className="option-title">Maintien</span>
+                      <span className="option-desc">Calories d'équilibre</span>
+                    </div>
+                  </label>
+                  <label className={`objective-option ${editForm.objectif === 'prise_de_muscle' ? 'selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="objectif"
+                      value="prise_de_muscle"
+                      checked={editForm.objectif === 'prise_de_muscle'}
+                      onChange={e => setEditForm({...editForm, objectif: e.target.value})}
+                    />
+                    <Icons.TrendingUp />
+                    <div className="option-content">
+                      <span className="option-title">Prise de muscle</span>
+                      <span className="option-desc">Surplus calorique +15%</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Niveau d'activité</label>
+                <select
+                  value={editForm.niveau_activite}
+                  onChange={e => setEditForm({...editForm, niveau_activite: e.target.value})}
+                >
+                  <option value="sedentaire">Sédentaire (peu ou pas d'exercice)</option>
+                  <option value="modere">Modéré (1-3 entraînements/sem)</option>
+                  <option value="actif">Actif (2-4 entraînements/sem)</option>
+                  <option value="tres_actif">Très actif (5-6 entraînements/sem)</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Poids actuel (kg)</label>
+                <input
+                  type="number"
+                  value={editForm.poids_actuel}
+                  onChange={e => setEditForm({...editForm, poids_actuel: e.target.value})}
+                  step="0.1"
+                  min="30"
+                  max="300"
+                />
+                <span className="form-hint">
+                  Ce poids sera utilisé pour recalculer les macros et enregistré dans le suivi
+                </span>
+              </div>
+            </div>
+
+            <div className="modal-info-box">
+              <Icons.Info />
+              <p>
+                Les calories et macros seront automatiquement recalculés selon le nouveau programme.
+                Le nouveau plan alimentaire devra être régénéré depuis l'onglet "Plans".
+              </p>
+            </div>
+            
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setShowEditModal(false)}>
+                Annuler
+              </button>
+              <button 
+                className="btn-primary" 
+                onClick={handleSaveProgram}
+                disabled={saving}
+              >
+                {saving ? 'Enregistrement...' : 'Appliquer les modifications'}
               </button>
             </div>
           </div>
