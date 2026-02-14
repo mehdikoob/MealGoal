@@ -2168,6 +2168,13 @@ const AdminFoods = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingFood, setEditingFood] = useState(null);
+  
+  // Search and filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [mealFilter, setMealFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('nom');
+  
   const [formData, setFormData] = useState({
     nom: '',
     categorie: 'proteines',
@@ -2195,6 +2202,41 @@ const AdminFoods = () => {
       setLoading(false);
     }
   };
+
+  // Filter and sort foods
+  const filteredFoods = foods
+    .filter(food => {
+      // Search filter
+      if (searchQuery && !food.nom.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return false;
+      }
+      // Category filter
+      if (categoryFilter !== 'all' && food.categorie !== categoryFilter) {
+        return false;
+      }
+      // Meal filter
+      if (mealFilter !== 'all') {
+        if (mealFilter === 'petit_dejeuner' && !food.petit_dejeuner) return false;
+        if (mealFilter === 'dejeuner' && !food.dejeuner) return false;
+        if (mealFilter === 'diner' && !food.diner) return false;
+        if (mealFilter === 'collation' && !food.collation) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'nom':
+          return a.nom.localeCompare(b.nom);
+        case 'calories':
+          return b.calories_100g - a.calories_100g;
+        case 'proteines':
+          return b.proteines_100g - a.proteines_100g;
+        case 'categorie':
+          return a.categorie.localeCompare(b.categorie);
+        default:
+          return 0;
+      }
+    });
 
   const handleSubmit = async () => {
     try {
@@ -2259,6 +2301,174 @@ const AdminFoods = () => {
       }
     }
   };
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setCategoryFilter('all');
+    setMealFilter('all');
+    setSortBy('nom');
+  };
+
+  const hasActiveFilters = searchQuery || categoryFilter !== 'all' || mealFilter !== 'all';
+
+  if (loading) {
+    return <LoadingAnimation text="Chargement des aliments..." />;
+  }
+
+  return (
+    <div className="admin-foods">
+      <div className="admin-foods-header">
+        <div>
+          <h1>Banque d'aliments</h1>
+          <p className="foods-count">{filteredFoods.length} aliment{filteredFoods.length > 1 ? 's' : ''} {hasActiveFilters ? `(sur ${foods.length})` : ''}</p>
+        </div>
+        <button className="btn-primary" onClick={() => setShowModal(true)}>
+          <Icons.Plus /> Ajouter un aliment
+        </button>
+      </div>
+
+      {/* Search and Filters Bar */}
+      <div className="foods-filters-bar">
+        <div className="search-box">
+          <Icons.Target />
+          <input
+            type="text"
+            placeholder="Rechercher un aliment..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button className="clear-search" onClick={() => setSearchQuery('')}>
+              <Icons.Trash />
+            </button>
+          )}
+        </div>
+        
+        <div className="filters-group">
+          <div className="filter-item">
+            <label>Catégorie</label>
+            <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
+              <option value="all">Toutes</option>
+              <option value="proteines">Protéines</option>
+              <option value="glucides">Glucides</option>
+              <option value="lipides">Lipides</option>
+            </select>
+          </div>
+          
+          <div className="filter-item">
+            <label>Repas</label>
+            <select value={mealFilter} onChange={e => setMealFilter(e.target.value)}>
+              <option value="all">Tous</option>
+              <option value="petit_dejeuner">Petit-déjeuner</option>
+              <option value="dejeuner">Déjeuner</option>
+              <option value="diner">Dîner</option>
+              <option value="collation">Collation</option>
+            </select>
+          </div>
+          
+          <div className="filter-item">
+            <label>Trier par</label>
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)}>
+              <option value="nom">Nom (A-Z)</option>
+              <option value="calories">Calories</option>
+              <option value="proteines">Protéines</option>
+              <option value="categorie">Catégorie</option>
+            </select>
+          </div>
+          
+          {hasActiveFilters && (
+            <button className="btn-clear-filters" onClick={clearFilters}>
+              Effacer les filtres
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Quick Category Stats */}
+      <div className="category-stats">
+        <div 
+          className={`category-stat ${categoryFilter === 'proteines' ? 'active' : ''}`}
+          onClick={() => setCategoryFilter(categoryFilter === 'proteines' ? 'all' : 'proteines')}
+        >
+          <span className="stat-dot proteines"></span>
+          <span className="stat-label">Protéines</span>
+          <span className="stat-count">{foods.filter(f => f.categorie === 'proteines').length}</span>
+        </div>
+        <div 
+          className={`category-stat ${categoryFilter === 'glucides' ? 'active' : ''}`}
+          onClick={() => setCategoryFilter(categoryFilter === 'glucides' ? 'all' : 'glucides')}
+        >
+          <span className="stat-dot glucides"></span>
+          <span className="stat-label">Glucides</span>
+          <span className="stat-count">{foods.filter(f => f.categorie === 'glucides').length}</span>
+        </div>
+        <div 
+          className={`category-stat ${categoryFilter === 'lipides' ? 'active' : ''}`}
+          onClick={() => setCategoryFilter(categoryFilter === 'lipides' ? 'all' : 'lipides')}
+        >
+          <span className="stat-dot lipides"></span>
+          <span className="stat-label">Lipides</span>
+          <span className="stat-count">{foods.filter(f => f.categorie === 'lipides').length}</span>
+        </div>
+      </div>
+
+      {/* Foods Grid/List */}
+      {filteredFoods.length === 0 ? (
+        <div className="no-results">
+          <Icons.Target />
+          <p>Aucun aliment trouvé</p>
+          {hasActiveFilters && (
+            <button className="btn-secondary" onClick={clearFilters}>
+              Effacer les filtres
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="foods-grid">
+          {filteredFoods.map(food => (
+            <div key={food.id} className={`food-card ${food.categorie}`}>
+              <div className="food-card-header">
+                <span className={`food-category-dot ${food.categorie}`}></span>
+                <h4>{food.nom}</h4>
+                <div className="food-card-actions">
+                  <button className="action-btn-small edit" onClick={() => handleEdit(food)}>
+                    <Icons.Edit />
+                  </button>
+                  <button className="action-btn-small delete" onClick={() => handleDelete(food.id)}>
+                    <Icons.Trash />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="food-card-macros">
+                <div className="macro-item">
+                  <span className="macro-value">{food.calories_100g}</span>
+                  <span className="macro-label">kcal</span>
+                </div>
+                <div className="macro-item protein">
+                  <span className="macro-value">{food.proteines_100g}g</span>
+                  <span className="macro-label">Prot</span>
+                </div>
+                <div className="macro-item carbs">
+                  <span className="macro-value">{food.glucides_100g}g</span>
+                  <span className="macro-label">Gluc</span>
+                </div>
+                <div className="macro-item fats">
+                  <span className="macro-value">{food.lipides_100g}g</span>
+                  <span className="macro-label">Lip</span>
+                </div>
+              </div>
+              
+              <div className="food-card-meals">
+                {food.petit_dejeuner !== false && <span className="meal-badge">Petit-déj</span>}
+                {food.dejeuner !== false && <span className="meal-badge">Déj</span>}
+                {food.diner !== false && <span className="meal-badge">Dîner</span>}
+                {food.collation !== false && <span className="meal-badge">Collation</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
   if (loading) {
     return <LoadingAnimation text="Chargement des aliments..." />;
