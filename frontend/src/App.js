@@ -1571,6 +1571,14 @@ const AdminUsers = () => {
     }
   };
 
+  const getObjectifIcon = (objectif) => {
+    switch(objectif) {
+      case 'perte_de_gras': return <Icons.TrendingDown />;
+      case 'prise_de_muscle': return <Icons.TrendingUp />;
+      default: return <Icons.Target />;
+    }
+  };
+
   if (loading) {
     return <LoadingAnimation text="Chargement des utilisateurs..." />;
   }
