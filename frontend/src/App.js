@@ -1499,6 +1499,55 @@ const AdminUsers = () => {
     setShowDetailModal(true);
   };
 
+  const handleEditProgram = (user) => {
+    setEditForm({
+      objectif: user.objectif,
+      niveau_activite: user.niveau_activite,
+      poids_actuel: user.poids_actuel || user.poids_initial_kg
+    });
+    setShowEditModal(true);
+  };
+
+  const handleSaveProgram = async () => {
+    if (!selectedUser) return;
+    
+    setSaving(true);
+    try {
+      // Update user profile with new values
+      const updatedUser = {
+        ...selectedUser,
+        objectif: editForm.objectif,
+        niveau_activite: editForm.niveau_activite,
+        poids_initial_kg: parseFloat(editForm.poids_actuel) // Use current weight for recalculation
+      };
+      
+      const response = await axios.put(`${API_URL}/api/users/${selectedUser.id}`, updatedUser);
+      
+      // Log the new weight
+      await axios.post(`${API_URL}/api/weight-logs`, {
+        user_id: selectedUser.id,
+        poids_kg: parseFloat(editForm.poids_actuel),
+        date: new Date().toISOString().split('T')[0]
+      });
+      
+      // Update local state
+      const updatedUserData = {
+        ...response.data,
+        poids_actuel: parseFloat(editForm.poids_actuel),
+        evolution_poids: selectedUser.evolution_poids,
+        nombre_pesees: (selectedUser.nombre_pesees || 0) + 1
+      };
+      
+      setSelectedUser(updatedUserData);
+      setUsers(users.map(u => u.id === selectedUser.id ? updatedUserData : u));
+      setShowEditModal(false);
+    } catch (error) {
+      alert('Erreur lors de la mise à jour');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const getActivityLabel = (niveau) => {
     switch(niveau) {
       case 'sedentaire': return 'Sédentaire (peu ou pas d\'exercice)';
