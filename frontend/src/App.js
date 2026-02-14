@@ -2470,66 +2470,6 @@ const AdminFoods = () => {
         </div>
       )}
 
-  if (loading) {
-    return <LoadingAnimation text="Chargement des aliments..." />;
-  }
-
-  return (
-    <div className="admin-foods">
-      <div className="admin-foods-header">
-        <h1>Banque d'aliments</h1>
-        <button className="btn-primary" onClick={() => setShowModal(true)}>
-          <Icons.Plus /> Ajouter un aliment
-        </button>
-      </div>
-
-      <div className="foods-table-container">
-        <table className="foods-table">
-          <thead>
-            <tr>
-              <th>Nom</th>
-              <th>Catégorie</th>
-              <th>Calories/100g</th>
-              <th>Protéines</th>
-              <th>Glucides</th>
-              <th>Lipides</th>
-              <th>Repas</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {foods.map(food => (
-              <tr key={food.id}>
-                <td>{food.nom}</td>
-                <td className="category-cell">
-                  <span className={`category-badge ${food.categorie}`}>
-                    {food.categorie}
-                  </span>
-                </td>
-                <td>{food.calories_100g}</td>
-                <td>{food.proteines_100g}g</td>
-                <td>{food.glucides_100g}g</td>
-                <td>{food.lipides_100g}g</td>
-                <td className="meal-tags">
-                  {food.petit_dejeuner !== false && <span className="meal-tag">PD</span>}
-                  {food.dejeuner !== false && <span className="meal-tag">Déj</span>}
-                  {food.diner !== false && <span className="meal-tag">Dîn</span>}
-                  {food.collation !== false && <span className="meal-tag">Col</span>}
-                </td>
-                <td className="actions-cell">
-                  <button className="action-btn edit" onClick={() => handleEdit(food)}>
-                    <Icons.Edit />
-                  </button>
-                  <button className="action-btn delete" onClick={() => handleDelete(food.id)}>
-                    <Icons.Trash />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
