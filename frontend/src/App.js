@@ -2441,21 +2441,24 @@ const AdminFoods = () => {
               </div>
               
               <div className="food-card-macros">
-                <div className="macro-item">
-                  <span className="macro-value">{food.calories_100g}</span>
-                  <span className="macro-label">kcal</span>
-                </div>
-                <div className="macro-item protein">
-                  <span className="macro-value">{food.proteines_100g}g</span>
-                  <span className="macro-label">Prot</span>
-                </div>
-                <div className="macro-item carbs">
-                  <span className="macro-value">{food.glucides_100g}g</span>
-                  <span className="macro-label">Gluc</span>
-                </div>
-                <div className="macro-item fats">
-                  <span className="macro-value">{food.lipides_100g}g</span>
-                  <span className="macro-label">Lip</span>
+                <div className="macros-header">Valeurs pour 100g</div>
+                <div className="macros-row">
+                  <div className="macro-item">
+                    <span className="macro-value">{food.calories_100g}</span>
+                    <span className="macro-label">kcal</span>
+                  </div>
+                  <div className="macro-item protein">
+                    <span className="macro-value">{food.proteines_100g}g</span>
+                    <span className="macro-label">Prot</span>
+                  </div>
+                  <div className="macro-item carbs">
+                    <span className="macro-value">{food.glucides_100g}g</span>
+                    <span className="macro-label">Gluc</span>
+                  </div>
+                  <div className="macro-item fats">
+                    <span className="macro-value">{food.lipides_100g}g</span>
+                    <span className="macro-label">Lip</span>
+                  </div>
                 </div>
               </div>
               
