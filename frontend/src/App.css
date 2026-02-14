@@ -1528,6 +1528,256 @@ body {
   color: var(--color-fats);
 }
 
+/* User Cell Styles */
+.user-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.user-fullname {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.user-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.weight-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.weight-initial {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.pesees-count {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* Activity Badge */
+.activity-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.activity-badge.sedentaire {
+  background: rgba(156, 163, 175, 0.2);
+  color: #6b7280;
+}
+
+.activity-badge.modere {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.activity-badge.actif {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.activity-badge.tres_actif {
+  background: rgba(249, 115, 22, 0.15);
+  color: #f97316;
+}
+
+/* Objective Badge Small */
+.objective-badge-small {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.objective-badge-small.perte_de_gras {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.objective-badge-small.maintien {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.objective-badge-small.prise_de_muscle {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+/* Action button view */
+.action-btn.view {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.action-btn.view:hover {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+/* User Detail Modal */
+.user-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.detail-section {
+  background: var(--bg-section);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.detail-section.full-width {
+  grid-column: span 2;
+}
+
+.detail-section h4 {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.detail-item .label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.detail-item .value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.detail-item .value.highlight {
+  color: var(--brand-primary);
+  font-weight: 600;
+}
+
+.detail-item .value.calories {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--brand-primary);
+}
+
+.detail-item .value.negative {
+  color: var(--color-protein);
+}
+
+.detail-item .value.positive {
+  color: var(--color-fats);
+}
+
+/* Preferences Display */
+.preferences-display {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pref-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.pref-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 80px;
+}
+
+.pref-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pref-tag {
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.pref-tag.carbs {
+  background: rgba(33, 150, 243, 0.15);
+  color: var(--color-carbs);
+}
+
+.pref-tag.proteins {
+  background: rgba(76, 175, 80, 0.15);
+  color: var(--color-protein);
+}
+
+.pref-tag.fats {
+  background: rgba(255, 152, 0, 0.15);
+  color: var(--color-fats);
+}
+
+.no-pref {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Danger Button */
+.btn-danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 100px;
+  padding: 12px 20px;
+  font-family: 'Satoshi', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.btn-danger svg {
+  width: 16px;
+  height: 16px;
+}
+
 .category-badge {
   display: inline-block;
   padding: 4px 12px;
