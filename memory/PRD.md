@@ -75,6 +75,10 @@ Application de génération et suivi de plans alimentaires personnalisés. L'app
 - Historique des plans par client
 - Édition manuelle des repas
 
+### Phase 5 - Règles nutritionnelles (15 février 2026) ✅
+- **Règle œufs entiers** : Quand les œufs entiers sont sélectionnés comme source de protéines, aucune source de lipides séparée n'est ajoutée (le jaune contient déjà les lipides)
+- Indication visuelle "(lipides inclus)" à côté des œufs entiers dans le plan
+
 ## Backlog (Non implémenté)
 
 ### P1 - Export PDF
