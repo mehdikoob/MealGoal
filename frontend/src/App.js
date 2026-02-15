@@ -2876,7 +2876,12 @@ const AdminMealPlans = () => {
                       {meal.items.map((item, itemIdx) => (
                         <div key={itemIdx} className="item-preview-with-equivs">
                           <div className="item-preview-main">
-                            <span className="item-name">{item.food_name}</span>
+                            <span className="item-name">
+                              {item.food_name}
+                              {item.food_name === 'Oeufs entiers' && (
+                                <span className="lipids-included-badge">(lipides inclus)</span>
+                              )}
+                            </span>
                             <span className="item-qty">{item.quantity_g}g</span>
                           </div>
                           {item.equivalents && item.equivalents.length > 0 && (
