@@ -2246,7 +2246,8 @@ const AdminFoods = () => {
         calories_100g: parseFloat(formData.calories_100g),
         proteines_100g: parseFloat(formData.proteines_100g),
         glucides_100g: parseFloat(formData.glucides_100g),
-        lipides_100g: parseFloat(formData.lipides_100g)
+        lipides_100g: parseFloat(formData.lipides_100g),
+        unite_personnalisee: formData.unite_personnalisee || null
       };
 
       if (editingFood) {
@@ -2267,7 +2268,8 @@ const AdminFoods = () => {
         petit_dejeuner: true,
         dejeuner: true,
         diner: true,
-        collation: true
+        collation: true,
+        unite_personnalisee: ''
       });
       fetchFoods();
     } catch (error) {
@@ -2287,7 +2289,8 @@ const AdminFoods = () => {
       petit_dejeuner: food.petit_dejeuner !== false,
       dejeuner: food.dejeuner !== false,
       diner: food.diner !== false,
-      collation: food.collation !== false
+      collation: food.collation !== false,
+      unite_personnalisee: food.unite_personnalisee || ''
     });
     setShowModal(true);
   };
