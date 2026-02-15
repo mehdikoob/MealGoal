@@ -1137,13 +1137,26 @@ const MealPlan = ({ user }) => {
             
             <div className="meal-items">
               {meal.items.map((item, itemIndex) => (
-                <div key={itemIndex} className="meal-item">
-                  <span className="item-name">{item.food_name}</span>
-                  <span className="item-quantity">{item.quantity_g}g</span>
-                  <div className="item-macros">
-                    <span className="macro protein">P: {Math.round(item.proteines)}g</span>
-                    <span className="macro carbs">G: {Math.round(item.glucides)}g</span>
-                    <span className="macro fats">L: {Math.round(item.lipides)}g</span>
+                <div key={itemIndex} className="meal-item-with-equivalents">
+                  <div className="meal-item">
+                    <div className="item-main">
+                      <span className="item-name">{item.food_name}</span>
+                      <span className="item-quantity">{item.quantity_g}g</span>
+                    </div>
+                    {item.equivalents && item.equivalents.length > 0 && (
+                      <div className="item-equivalents">
+                        {item.equivalents.map((eq, eqIndex) => (
+                          <span key={eqIndex} className="equivalent">
+                            ou {eq.quantity} {eq.food_name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="item-macros">
+                      <span className="macro protein">P: {Math.round(item.proteines)}g</span>
+                      <span className="macro carbs">G: {Math.round(item.glucides)}g</span>
+                      <span className="macro fats">L: {Math.round(item.lipides)}g</span>
+                    </div>
                   </div>
                 </div>
               ))}
