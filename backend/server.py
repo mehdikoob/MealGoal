@@ -324,6 +324,118 @@ def get_user_preferred_foods(preferences: FoodPreferences):
     
     return preferred_foods
 
+def find_equivalents(food: dict, user_preferences: dict, meal_type: str, max_equivalents: int = 2) -> list:
+    """
+    Find equivalent foods based on the same category and user preferences.
+    Returns a list of alternative foods with calculated quantities.
+    """
+    equivalents = []
+    categorie = food.get("categorie", "")
+    
+    # Get all foods from the same category that the user prefers
+    category_foods = list(foods_collection.find({
+        "categorie": categorie,
+        "id": {"$ne": food.get("id")}  # Exclude the current food
+    }))
+    
+    # Filter by meal type authorization
+    meal_key_map = {
+        "Petit-déjeuner": "petit_dejeuner",
+        "Déjeuner": "dejeuner", 
+        "Collation": "collation",
+        "Dîner": "diner",
+        "Collation tardive": "collation"
+    }
+    meal_key = meal_key_map.get(meal_type, "dejeuner")
+    
+    # Check user preferences for this category
+    pref_food_names = []
+    if categorie == "proteines":
+        protein_map = {
+            "poulet": "Poulet (blanc)",
+            "boeuf_hache": "Boeuf haché 5%",
+            "oeufs": "Oeufs entiers",
+            "poisson_blanc": "Cabillaud",
+            "whey": "Whey protéine",
+            "skyr": "Skyr"
+        }
+        for pref in user_preferences.get("proteins", []):
+            if pref in protein_map:
+                pref_food_names.append(protein_map[pref])
+    elif categorie == "glucides":
+        carb_map = {
+            "pates": "Pâtes (cuites)",
+            "riz": "Riz blanc (cuit)",
+            "flocons_avoine": "Flocons d'avoine",
+            "pommes_de_terre": "Pommes de terre (cuites)",
+            "patates_douces": "Patate douce (cuite)",
+            "pain_complet": "Pain complet"
+        }
+        for pref in user_preferences.get("carbs", []):
+            if pref in carb_map:
+                pref_food_names.append(carb_map[pref])
+    elif categorie == "lipides":
+        fat_map = {
+            "amandes": "Amandes",
+            "noix": "Noix",
+            "huile_olive": "Huile d'olive",
+            "beurre_cacahuete": "Beurre de cacahuète"
+        }
+        for pref in user_preferences.get("fats", []):
+            if pref in fat_map:
+                pref_food_names.append(fat_map[pref])
+    
+    for alt_food in category_foods:
+        # Check if food is authorized for this meal
+        if not alt_food.get(meal_key, True):
+            continue
+            
+        # Prioritize user preferred foods
+        is_preferred = alt_food.get("nom") in pref_food_names
+        if not is_preferred and len(pref_food_names) > 0:
+            continue  # Skip if user has preferences and this isn't one
+        
+        # Calculate equivalent quantity based on the main macro of the category
+        if categorie == "proteines":
+            main_macro_100g = food.get("proteines_100g", 1)
+            alt_macro_100g = alt_food.get("proteines_100g", 1)
+        elif categorie == "glucides":
+            main_macro_100g = food.get("glucides_100g", 1)
+            alt_macro_100g = alt_food.get("glucides_100g", 1)
+        else:  # lipides
+            main_macro_100g = food.get("lipides_100g", 1)
+            alt_macro_100g = alt_food.get("lipides_100g", 1)
+        
+        # Avoid division by zero
+        if alt_macro_100g <= 0:
+            continue
+            
+        equivalents.append({
+            "food_id": alt_food.get("id", ""),
+            "food_name": alt_food.get("nom", ""),
+            "unite_personnalisee": alt_food.get("unite_personnalisee"),
+            "proteines_100g": alt_food.get("proteines_100g", 0),
+            "glucides_100g": alt_food.get("glucides_100g", 0),
+            "lipides_100g": alt_food.get("lipides_100g", 0),
+            "calories_100g": alt_food.get("calories_100g", 0),
+            "main_macro_100g": alt_macro_100g
+        })
+        
+        if len(equivalents) >= max_equivalents:
+            break
+    
+    return equivalents
+
+def calculate_quantity_display(food: dict, quantity_g: float) -> str:
+    """Calculate the display quantity based on unite_personnalisee"""
+    unite = food.get("unite_personnalisee")
+    if unite:
+        # For custom units, we assume the nutritional values are for 1 unit
+        # So we calculate how many units based on quantity_g ratio
+        # For simplicity, we'll display quantity_g but with the unit context
+        return f"{quantity_g}g"
+    return f"{quantity_g}g"
+
 def time_to_minutes(time_str: str) -> int:
     """Convert HH:MM to minutes from midnight"""
     parts = time_str.split(":")
