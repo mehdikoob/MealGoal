@@ -2445,7 +2445,9 @@ const AdminFoods = () => {
               </div>
               
               <div className="food-card-macros">
-                <div className="macros-header">Valeurs pour 100g</div>
+                <div className="macros-header">
+                  {food.unite_personnalisee ? `Valeurs pour ${food.unite_personnalisee}` : 'Valeurs pour 100g'}
+                </div>
                 <div className="macros-row">
                   <div className="macro-item">
                     <span className="macro-value">{food.calories_100g}</span>
