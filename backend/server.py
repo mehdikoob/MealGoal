@@ -575,6 +575,8 @@ def generate_meal_plan(user: dict, target_date: str) -> dict:
             meal_fat_target *= 1.3
         
         # Add protein source
+        skip_separate_lipids = False  # Flag to skip adding extra lipids when whole eggs are used
+        
         if preferred_foods["proteines"]:
             protein_food = preferred_foods["proteines"][len(meals) % len(preferred_foods["proteines"])]
             quantity = (meal_prot_target / protein_food["proteines_100g"]) * 100
@@ -584,6 +586,11 @@ def generate_meal_plan(user: dict, target_date: str) -> dict:
             item_prot = (protein_food["proteines_100g"] / 100) * quantity
             item_carb = (protein_food["glucides_100g"] / 100) * quantity
             item_fat = (protein_food["lipides_100g"] / 100) * quantity
+            
+            # Check if whole eggs are used - they contain enough lipids in the yolk
+            # so we don't need to add separate fat sources
+            if protein_food["nom"] == "Oeufs entiers":
+                skip_separate_lipids = True
             
             # Find equivalents
             user_prefs = {
