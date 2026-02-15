@@ -2185,7 +2185,8 @@ const AdminFoods = () => {
     petit_dejeuner: true,
     dejeuner: true,
     diner: true,
-    collation: true
+    collation: true,
+    unite_personnalisee: ''
   });
 
   useEffect(() => {
