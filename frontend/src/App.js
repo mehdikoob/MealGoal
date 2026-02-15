@@ -2542,6 +2542,17 @@ const AdminFoods = () => {
             </div>
             
             <div className="form-group">
+              <label>Unité personnalisée (optionnel)</label>
+              <input
+                type="text"
+                value={formData.unite_personnalisee}
+                onChange={e => setFormData({...formData, unite_personnalisee: e.target.value})}
+                placeholder="Ex: 1 oeuf, 1 tranche, 1 cuillère..."
+              />
+              <span className="form-hint">Laissez vide pour "100g". Si rempli, les valeurs nutritionnelles seront pour cette unité.</span>
+            </div>
+            
+            <div className="form-group">
               <label>Repas autorisés</label>
               <div className="checkbox-row">
                 <label className={`checkbox-pill ${formData.petit_dejeuner ? 'active' : ''}`}>
