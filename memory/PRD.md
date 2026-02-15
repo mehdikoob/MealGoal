@@ -115,4 +115,4 @@ Application de génération et suivi de plans alimentaires personnalisés. L'app
 - `GET /api/weight-logs/{user_id}/stats` - Statistiques de poids
 
 ## URL de preview
-https://macro-planner-5.preview.emergentagent.com
+https://diet-tracker-ai-3.preview.emergentagent.com
