@@ -689,8 +689,8 @@ def generate_meal_plan(user: dict, target_date: str) -> dict:
                 meal_carb += item_carb
                 meal_fat += item_fat
         
-        # Add fat source
-        if preferred_foods["lipides"]:
+        # Add fat source (skip if whole eggs are used as protein source)
+        if preferred_foods["lipides"] and not skip_separate_lipids:
             fat_food = preferred_foods["lipides"][len(meals) % len(preferred_foods["lipides"])]
             remaining_fat = meal_fat_target - meal_fat
             if remaining_fat > 0:
