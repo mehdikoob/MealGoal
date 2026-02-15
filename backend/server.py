@@ -129,14 +129,23 @@ class Food(BaseModel):
 class FoodResponse(Food):
     id: str
 
+class MealItemEquivalent(BaseModel):
+    food_id: str
+    food_name: str
+    quantity: str  # "150g" or "1 oeuf" depending on unite_personnalisee
+    unite_personnalisee: Optional[str] = None
+
 class MealItem(BaseModel):
     food_id: str
     food_name: str
     quantity_g: float
+    quantity_display: Optional[str] = None  # "150g" or "2 oeufs"
     calories: float
     proteines: float
     glucides: float
     lipides: float
+    categorie: Optional[str] = None
+    equivalents: Optional[List[MealItemEquivalent]] = None  # Alternative foods
 
 class Meal(BaseModel):
     nom: str  # petit_dejeuner, dejeuner, collation, diner
