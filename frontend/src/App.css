@@ -1121,6 +1121,20 @@ body {
   font-size: 15px;
   color: var(--text-primary);
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lipids-included-badge {
+  font-size: 11px;
+  color: var(--accent-secondary);
+  background: rgba(255, 152, 0, 0.15);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .item-quantity {
