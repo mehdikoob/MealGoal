@@ -2869,9 +2869,20 @@ const AdminMealPlans = () => {
                     </div>
                     <div className="meal-items-preview">
                       {meal.items.map((item, itemIdx) => (
-                        <div key={itemIdx} className="item-preview">
-                          <span className="item-name">{item.food_name}</span>
-                          <span className="item-qty">{item.quantity_g}g</span>
+                        <div key={itemIdx} className="item-preview-with-equivs">
+                          <div className="item-preview-main">
+                            <span className="item-name">{item.food_name}</span>
+                            <span className="item-qty">{item.quantity_g}g</span>
+                          </div>
+                          {item.equivalents && item.equivalents.length > 0 && (
+                            <div className="item-equivalents-preview">
+                              {item.equivalents.map((eq, eqIdx) => (
+                                <span key={eqIdx} className="equiv-badge">
+                                  ou {eq.quantity} {eq.food_name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
