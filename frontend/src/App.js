@@ -1140,7 +1140,12 @@ const MealPlan = ({ user }) => {
                 <div key={itemIndex} className="meal-item-with-equivalents">
                   <div className="meal-item">
                     <div className="item-main">
-                      <span className="item-name">{item.food_name}</span>
+                      <span className="item-name">
+                        {item.food_name}
+                        {item.food_name === 'Oeufs entiers' && (
+                          <span className="lipids-included-badge">(lipides inclus)</span>
+                        )}
+                      </span>
                       <span className="item-quantity">{item.quantity_g}g</span>
                     </div>
                     {item.equivalents && item.equivalents.length > 0 && (
