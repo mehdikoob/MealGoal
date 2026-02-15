@@ -326,13 +326,14 @@ def get_user_preferred_foods(preferences: FoodPreferences):
 
 def find_equivalents(food: dict, user_preferences: dict, meal_type: str, max_equivalents: int = 2) -> list:
     """
-    Find equivalent foods based on the same category and user preferences.
+    Find equivalent foods based on the same category.
     Returns a list of alternative foods with calculated quantities.
+    Includes both user preferred foods AND other authorized foods for this meal.
     """
     equivalents = []
     categorie = food.get("categorie", "")
     
-    # Get all foods from the same category that the user prefers
+    # Get all foods from the same category
     category_foods = list(foods_collection.find({
         "categorie": categorie,
         "id": {"$ne": food.get("id")}  # Exclude the current food
@@ -385,16 +386,25 @@ def find_equivalents(food: dict, user_preferences: dict, meal_type: str, max_equ
             if pref in fat_map:
                 pref_food_names.append(fat_map[pref])
     
+    # Sort foods: preferred first, then others
+    preferred = []
+    others = []
+    
     for alt_food in category_foods:
         # Check if food is authorized for this meal
         if not alt_food.get(meal_key, True):
             continue
-            
-        # Prioritize user preferred foods
-        is_preferred = alt_food.get("nom") in pref_food_names
-        if not is_preferred and len(pref_food_names) > 0:
-            continue  # Skip if user has preferences and this isn't one
         
+        is_preferred = alt_food.get("nom") in pref_food_names
+        if is_preferred:
+            preferred.append(alt_food)
+        else:
+            others.append(alt_food)
+    
+    # Combine: preferred foods first, then others
+    sorted_foods = preferred + others
+    
+    for alt_food in sorted_foods:
         # Calculate equivalent quantity based on the main macro of the category
         if categorie == "proteines":
             main_macro_100g = food.get("proteines_100g", 1)
