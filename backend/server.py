@@ -575,14 +575,48 @@ def generate_meal_plan(user: dict, target_date: str) -> dict:
             item_carb = (protein_food["glucides_100g"] / 100) * quantity
             item_fat = (protein_food["lipides_100g"] / 100) * quantity
             
+            # Find equivalents
+            user_prefs = {
+                "proteins": [p for p in preferences.proteins],
+                "carbs": [c for c in preferences.carbs],
+                "fats": [f for f in preferences.fats]
+            }
+            equivalents = find_equivalents(protein_food, user_prefs, schedule["nom"])
+            
+            # Calculate equivalent quantities
+            equiv_list = []
+            for eq in equivalents:
+                # Calculate quantity to match same protein amount
+                eq_quantity = (item_prot / eq["proteines_100g"]) * 100 if eq["proteines_100g"] > 0 else 0
+                eq_quantity = round(eq_quantity / 10) * 10
+                
+                # Format quantity display
+                if eq["unite_personnalisee"]:
+                    # For items like eggs, calculate number of units
+                    # Assuming nutritional values stored are per 1 unit
+                    units_needed = round(eq_quantity / 100 * (100 / eq["proteines_100g"]) * eq["proteines_100g"] / eq["proteines_100g"])
+                    units_needed = max(1, round(item_prot / eq["proteines_100g"]))
+                    qty_display = f"{units_needed} {eq['unite_personnalisee'].replace('1 ', '')}" if units_needed > 1 else eq['unite_personnalisee']
+                else:
+                    qty_display = f"{int(eq_quantity)}g"
+                
+                equiv_list.append({
+                    "food_id": eq["food_id"],
+                    "food_name": eq["food_name"],
+                    "quantity": qty_display,
+                    "unite_personnalisee": eq["unite_personnalisee"]
+                })
+            
             meal_items.append({
                 "food_id": protein_food["id"],
                 "food_name": protein_food["nom"],
                 "quantity_g": quantity,
+                "categorie": "proteines",
                 "calories": round(item_cal, 1),
                 "proteines": round(item_prot, 1),
                 "glucides": round(item_carb, 1),
-                "lipides": round(item_fat, 1)
+                "lipides": round(item_fat, 1),
+                "equivalents": equiv_list if equiv_list else None
             })
             meal_cal += item_cal
             meal_prot += item_prot
