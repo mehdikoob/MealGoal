@@ -124,6 +124,7 @@ class Food(BaseModel):
     dejeuner: bool = True
     diner: bool = True
     collation: bool = True
+    unite_personnalisee: Optional[str] = None  # ex: "1 oeuf", "1 tranche", None = 100g
 
 class FoodResponse(Food):
     id: str
