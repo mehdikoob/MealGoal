@@ -2924,7 +2924,12 @@ const AdminMealPlans = () => {
             <div className="edit-meal-items">
               {editingMeal.items.map((item, idx) => (
                 <div key={idx} className="edit-item-row">
-                  <span className="item-name">{item.food_name}</span>
+                  <span className="item-name">
+                    {item.food_name}
+                    {item.food_name === 'Oeufs entiers' && (
+                      <span className="lipids-included-badge">(lipides inclus)</span>
+                    )}
+                  </span>
                   <div className="item-quantity-input">
                     <input
                       type="number"
