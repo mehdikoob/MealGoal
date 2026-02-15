@@ -21,7 +21,8 @@ Application de génération et suivi de plans alimentaires personnalisés. L'app
   - Filtrage par type de repas (petit-déjeuner, déjeuner, dîner, collation)
   - Tri (nom, calories, protéines, catégorie)
   - CRUD complet (ajout, modification, suppression)
-  - **Unité personnalisée** : possibilité de définir une unité alternative (ex: "1 oeuf" au lieu de 100g)
+  - **Unité personnalisée** : possibilité de définir une unité alternative (ex: "1 oeuf", "1 banane", "1 portion (30g)", "1 cuillère à soupe")
+- **Équivalences alimentaires** : Affichage automatique des alternatives pour chaque aliment du plan ("ou X ou Y"), basées sur les aliments autorisés pour le repas
 - **Plans alimentaires** : Historique par client, édition manuelle des repas
 
 ### UX/UI
