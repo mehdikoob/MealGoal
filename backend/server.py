@@ -3,16 +3,19 @@ Application de génération et de suivi de plans alimentaires personnalisés
 Backend FastAPI
 """
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from enum import Enum
 import os
 import uuid
 from dotenv import load_dotenv
 from pymongo import MongoClient
+from passlib.context import CryptContext
+from jose import JWTError, jwt
 
 load_dotenv()
 
@@ -33,13 +36,68 @@ admin_collection = db["admins"]
 app = FastAPI(title="MealGoal - Plans Alimentaires Personnalisés")
 
 # CORS Configuration
+ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Content-Type", "Authorization"],
 )
+
+# ==================== AUTH ====================
+
+JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-production-use-strong-secret")
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRE_MINUTES = int(os.environ.get("JWT_EXPIRE_MINUTES", "1440"))  # 24h
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+bearer_scheme = HTTPBearer()
+
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+
+def verify_password(plain: str, hashed: str) -> bool:
+    return pwd_context.verify(plain, hashed)
+
+
+def create_access_token(user_id: str) -> str:
+    payload = {
+        "sub": user_id,
+        "exp": datetime.utcnow() + timedelta(minutes=JWT_EXPIRE_MINUTES),
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
+    try:
+        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id: str = payload.get("sub")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Token invalide")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Token invalide ou expiré")
+    user = users_collection.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+    if not user:
+        raise HTTPException(status_code=401, detail="Utilisateur introuvable")
+    return user
+
+
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@mealgoal.fr")
+ADMIN_PASSWORD_HASH = hash_password(os.environ.get("ADMIN_PASSWORD", "admin"))
+
+
+async def get_current_admin(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
+    try:
+        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        sub: str = payload.get("sub")
+        if sub != "admin":
+            raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Token invalide ou expiré")
+    return {"role": "admin"}
 
 # ==================== ENUMS ====================
 
@@ -107,6 +165,18 @@ class UserProfileResponse(UserProfile):
     proteines_g: int
     glucides_g: int
     lipides_g: int
+
+class UserCreate(UserProfile):
+    password: str = Field(min_length=8)
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: Optional[dict] = None
 
 class WeightLog(BaseModel):
     user_id: str
@@ -776,33 +846,59 @@ def generate_meal_plan(user: dict, target_date: str) -> dict:
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
+# ==================== AUTH ENDPOINTS ====================
+
+@app.post("/api/auth/login", response_model=TokenResponse)
+async def login(request: LoginRequest):
+    user = users_collection.find_one({"email": request.email})
+    if not user or not verify_password(request.password, user.get("password_hash", "")):
+        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+    token = create_access_token(user["id"])
+    user_safe = {k: v for k, v in user.items() if k not in ("_id", "password_hash")}
+    return TokenResponse(access_token=token, user=user_safe)
+
+
+@app.post("/api/auth/admin/login", response_model=TokenResponse)
+async def admin_login(request: LoginRequest):
+    if request.email != ADMIN_EMAIL or not verify_password(request.password, ADMIN_PASSWORD_HASH):
+        raise HTTPException(status_code=401, detail="Identifiants administrateur incorrects")
+    token = create_access_token("admin")
+    return TokenResponse(access_token=token)
+
+
+@app.get("/api/auth/me")
+async def get_me(current_user: dict = Depends(get_current_user)):
+    return current_user
+
 # ==================== USER ENDPOINTS ====================
 
-@app.post("/api/users", response_model=UserProfileResponse)
-async def create_user(user: UserProfile):
+@app.post("/api/users", response_model=TokenResponse)
+async def create_user(user: UserCreate):
     """Create a new user profile and calculate nutritional targets"""
-    
+
     # Check if email already exists
     existing = users_collection.find_one({"email": user.email})
     if existing:
         raise HTTPException(status_code=400, detail="Un utilisateur avec cet email existe déjà")
-    
+
     # Calculate BMR and TDEE
     bmr = calculate_bmr(user.sexe, user.poids_initial_kg, user.taille_cm, user.age)
     tdee = calculate_tdee(bmr, user.niveau_activite)
     calories = adjust_calories_for_goal(tdee, user.objectif)
     macros = calculate_macros(calories, user.objectif, user.poids_initial_kg)
-    
+
     user_data = user.model_dump()
+    # Hash password, never store plain text
+    user_data["password_hash"] = hash_password(user_data.pop("password"))
     user_data["id"] = str(uuid.uuid4())
     user_data["created_at"] = datetime.now().isoformat()
     user_data["calories_journalieres"] = calories
     user_data["proteines_g"] = macros["proteines_g"]
     user_data["glucides_g"] = macros["glucides_g"]
     user_data["lipides_g"] = macros["lipides_g"]
-    
+
     users_collection.insert_one(user_data)
-    
+
     # Create initial weight log
     weight_log = {
         "id": str(uuid.uuid4()),
@@ -812,8 +908,10 @@ async def create_user(user: UserProfile):
         "created_at": datetime.now().isoformat()
     }
     weight_logs_collection.insert_one(weight_log)
-    
-    return UserProfileResponse(**user_data)
+
+    token = create_access_token(user_data["id"])
+    safe_user = {k: v for k, v in user_data.items() if k not in ("_id", "password_hash")}
+    return TokenResponse(access_token=token, user=safe_user)
 
 @app.get("/api/users/{user_id}", response_model=UserProfileResponse)
 async def get_user(user_id: str):
@@ -857,7 +955,7 @@ async def update_user(user_id: str, user: UserProfile):
     return UserProfileResponse(**user_data)
 
 @app.delete("/api/users/{user_id}")
-async def delete_user(user_id: str):
+async def delete_user(user_id: str, _admin=Depends(get_current_admin)):
     """Delete a user and all associated data"""
     existing = users_collection.find_one({"id": user_id})
     if not existing:
@@ -875,9 +973,9 @@ async def delete_user(user_id: str):
     return {"message": "Utilisateur et données associées supprimés"}
 
 @app.get("/api/users")
-async def list_users():
+async def list_users(_admin=Depends(get_current_admin)):
     """List all users (admin)"""
-    users = list(users_collection.find({}, {"_id": 0}))
+    users = list(users_collection.find({}, {"_id": 0, "password_hash": 0}))
     return users
 
 # ==================== MEAL PLAN ENDPOINTS ====================
@@ -917,7 +1015,7 @@ async def get_meal_plans(user_id: str, date_from: str = None, date_to: str = Non
     return plans
 
 @app.put("/api/meal-plans/{plan_id}")
-async def update_meal_plan(plan_id: str, updated_plan: dict):
+async def update_meal_plan(plan_id: str, updated_plan: dict, _admin=Depends(get_current_admin)):
     """Update a meal plan (admin modification)"""
     existing = meal_plans_collection.find_one({"id": plan_id})
     if not existing:
@@ -973,7 +1071,7 @@ async def update_meal_plan(plan_id: str, updated_plan: dict):
     return updated_plan
 
 @app.delete("/api/meal-plans/{plan_id}")
-async def delete_meal_plan(plan_id: str):
+async def delete_meal_plan(plan_id: str, _admin=Depends(get_current_admin)):
     """Delete a meal plan"""
     result = meal_plans_collection.delete_one({"id": plan_id})
     if result.deleted_count == 0:
@@ -1104,7 +1202,7 @@ async def list_foods():
     return foods
 
 @app.post("/api/foods", response_model=FoodResponse)
-async def create_food(food: Food):
+async def create_food(food: Food, _admin=Depends(get_current_admin)):
     """Add a new food to the database (admin)"""
     food_data = food.model_dump()
     food_data["id"] = str(uuid.uuid4())
@@ -1112,7 +1210,7 @@ async def create_food(food: Food):
     return FoodResponse(**food_data)
 
 @app.put("/api/foods/{food_id}", response_model=FoodResponse)
-async def update_food(food_id: str, food: Food):
+async def update_food(food_id: str, food: Food, _admin=Depends(get_current_admin)):
     """Update a food in the database (admin)"""
     existing = foods_collection.find_one({"id": food_id})
     if not existing:
@@ -1124,7 +1222,7 @@ async def update_food(food_id: str, food: Food):
     return FoodResponse(**food_data)
 
 @app.delete("/api/foods/{food_id}")
-async def delete_food(food_id: str):
+async def delete_food(food_id: str, _admin=Depends(get_current_admin)):
     """Delete a food from the database (admin)"""
     result = foods_collection.delete_one({"id": food_id})
     if result.deleted_count == 0:
@@ -1134,7 +1232,7 @@ async def delete_food(food_id: str):
 # ==================== ADMIN ENDPOINTS ====================
 
 @app.get("/api/admin/stats")
-async def get_admin_stats():
+async def get_admin_stats(_admin=Depends(get_current_admin)):
     """Get comprehensive admin dashboard statistics"""
     from datetime import timedelta
     
@@ -1266,9 +1364,9 @@ async def get_admin_stats():
     }
 
 @app.get("/api/admin/users")
-async def get_all_users_admin():
+async def get_all_users_admin(_admin=Depends(get_current_admin)):
     """Get all users with their stats (admin)"""
-    users = list(users_collection.find({}, {"_id": 0}))
+    users = list(users_collection.find({}, {"_id": 0, "password_hash": 0}))
     
     for user in users:
         logs = list(weight_logs_collection.find({"user_id": user["id"]}, {"_id": 0}).sort("date", 1))
