@@ -69,28 +69,39 @@ const MealPlan = ({ user }) => {
         </p>
       </div>
 
-      <div className="meal-plan-summary">
-        <div className="summary-item">
-          <span className="summary-label">Objectif</span>
-          <span className="summary-value">{mealPlan.objectif_calories} kcal</span>
-        </div>
-        <div className="summary-item">
-          <span className="summary-label">Total prévu</span>
-          <span className="summary-value">{Math.round(mealPlan.total_calories)} kcal</span>
-        </div>
-        <div className="summary-item">
-          <span className="summary-label">Protéines</span>
-          <span className="summary-value">{Math.round(mealPlan.total_proteines)}g / {mealPlan.objectif_proteines}g</span>
-        </div>
-        <div className="summary-item">
-          <span className="summary-label">Glucides</span>
-          <span className="summary-value">{Math.round(mealPlan.total_glucides)}g / {mealPlan.objectif_glucides}g</span>
-        </div>
-        <div className="summary-item">
-          <span className="summary-label">Lipides</span>
-          <span className="summary-value">{Math.round(mealPlan.total_lipides)}g / {mealPlan.objectif_lipides}g</span>
-        </div>
-      </div>
+      {(() => {
+        const calDelta = Math.round(mealPlan.total_calories) - mealPlan.objectif_calories;
+        const isOver   = calDelta > mealPlan.objectif_calories * 0.10;
+        return (
+          <div className="meal-plan-summary">
+            <div className="summary-item">
+              <span className="summary-label">Objectif</span>
+              <span className="summary-value">{mealPlan.objectif_calories} kcal</span>
+            </div>
+            <div className="summary-item">
+              <span className="summary-label">Total prévu</span>
+              <span className="summary-value">
+                {Math.round(mealPlan.total_calories)} kcal
+                {isOver && (
+                  <span className="calorie-overage-badge">+{calDelta} kcal</span>
+                )}
+              </span>
+            </div>
+            <div className="summary-item">
+              <span className="summary-label">Protéines</span>
+              <span className="summary-value">{Math.round(mealPlan.total_proteines)}g / {mealPlan.objectif_proteines}g</span>
+            </div>
+            <div className="summary-item">
+              <span className="summary-label">Glucides</span>
+              <span className="summary-value">{Math.round(mealPlan.total_glucides)}g / {mealPlan.objectif_glucides}g</span>
+            </div>
+            <div className="summary-item">
+              <span className="summary-label">Lipides</span>
+              <span className="summary-value">{Math.round(mealPlan.total_lipides)}g / {mealPlan.objectif_lipides}g</span>
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="meals-list">
         {mealPlan.meals.map((meal, index) => (
@@ -119,9 +130,10 @@ const MealPlan = ({ user }) => {
                     </div>
                     {item.equivalents && item.equivalents.length > 0 && (
                       <div className="item-equivalents">
+                        <span className="equivalents-label">Alternatives :</span>
                         {item.equivalents.map((eq, eqIndex) => (
                           <span key={eqIndex} className="equivalent">
-                            ou {eq.quantity} {eq.food_name}
+                            ↔ {eq.quantity} {eq.food_name}
                           </span>
                         ))}
                       </div>

@@ -838,15 +838,12 @@ def generate_meal_plan(user: dict, target_date: str) -> dict:
         meal_fat = 0
         meal_cal = 0
         
-        # Distribute macros for this meal
-        meal_prot_target = proteines_target / len(meal_schedule)
-        meal_carb_target = glucides_target / len(meal_schedule)
-        meal_fat_target = lipides_target / len(meal_schedule)
-        
-        if schedule["is_main"]:
-            meal_prot_target *= 1.3
-            meal_carb_target *= 1.3
-            meal_fat_target *= 1.3
+        # Distribute macros proportionally to the caloric share of this meal
+        # (avoids the double-counting that flat ÷N × 1.3 caused)
+        meal_cal_share = meal_calories / calories_target if calories_target > 0 else 1.0 / len(meal_schedule)
+        meal_prot_target = proteines_target * meal_cal_share
+        meal_carb_target = glucides_target * meal_cal_share
+        meal_fat_target  = lipides_target  * meal_cal_share
         
         # ── Protein sources — multi-source smart distribution ─────────────────
         skip_separate_lipids = False
