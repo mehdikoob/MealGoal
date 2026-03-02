@@ -1,0 +1,52 @@
+# Production override — use with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Prerequisites on the VPS:
+#   1. Set DOMAIN=mealgoal.fr in .env (or export it)
+#   2. Run initial cert: docker compose run --rm certbot certonly --webroot
+#        -w /var/www/certbot -d mealgoal.fr -d www.mealgoal.fr
+#   3. Then start everything: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  backend:
+    # In production, backend is not exposed directly — nginx proxies /api/
+    ports: !reset []
+    environment:
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      FROM_EMAIL: ${FROM_EMAIL:-MealGoal <noreply@mealgoal.fr>}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PRICE_ID_PRO: ${STRIPE_PRICE_ID_PRO:-}
+      STRIPE_PRICE_ID_COACH: ${STRIPE_PRICE_ID_COACH:-}
+      FRONTEND_URL: https://${DOMAIN}
+      ALLOWED_ORIGINS: https://${DOMAIN}
+
+  frontend:
+    # Override nginx config with HTTPS version
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_BACKEND_URL: https://${DOMAIN}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.https.conf:/etc/nginx/nginx.conf:ro
+      - certbot_conf:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+
+  # Certbot for Let's Encrypt SSL — auto-renews every 12h
+  certbot:
+    image: certbot/certbot:latest
+    restart: unless-stopped
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --quiet; sleep 12h & wait $!; done;'"
+
+volumes:
+  certbot_conf:
+  certbot_www:

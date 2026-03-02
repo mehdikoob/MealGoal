@@ -3,7 +3,7 @@ Application de génération et de suivi de plans alimentaires personnalisés
 Backend FastAPI
 """
 
-from fastapi import FastAPI, HTTPException, Query, Depends
+from fastapi import FastAPI, HTTPException, Query, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field, EmailStr
@@ -12,12 +12,44 @@ from datetime import datetime, date, timedelta
 from enum import Enum
 import os
 import uuid
+import logging
 from dotenv import load_dotenv
-from pymongo import MongoClient
-from passlib.context import CryptContext
+from pymongo import MongoClient, ASCENDING, DESCENDING
+import bcrypt
 from jose import JWTError, jwt
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 load_dotenv()
+
+# ==================== SENTRY ====================
+
+_SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
+if _SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    from sentry_sdk.integrations.pymongo import PyMongoIntegration
+    sentry_sdk.init(
+        dsn=_SENTRY_DSN,
+        integrations=[FastApiIntegration(), PyMongoIntegration()],
+        traces_sample_rate=0.1,
+        environment=os.environ.get("ENV", "development"),
+        send_default_pii=False,
+    )
+
+# ==================== LOGGING ====================
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s — %(message)s",
+    datefmt="%Y-%m-%dT%H:%M:%S",
+)
+logger = logging.getLogger("mealgoal")
+
+# ==================== RATE LIMITER ====================
+
+limiter = Limiter(key_func=get_remote_address, default_limits=[])
 
 # MongoDB Connection
 MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
@@ -32,11 +64,14 @@ meal_plans_collection = db["meal_plans"]
 weight_logs_collection = db["weight_logs"]
 foods_collection = db["foods"]
 admin_collection = db["admins"]
+reset_tokens_collection = db["reset_tokens"]
 
 app = FastAPI(title="MealGoal - Plans Alimentaires Personnalisés")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS Configuration
-ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
@@ -51,16 +86,22 @@ JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-production-use-strong-se
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_MINUTES = int(os.environ.get("JWT_EXPIRE_MINUTES", "1440"))  # 24h
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+_DEFAULT_JWT_SECRET = "change-me-in-production-use-strong-secret"
+if os.environ.get("ENV") == "production" and JWT_SECRET == _DEFAULT_JWT_SECRET:
+    raise RuntimeError(
+        "FATAL: JWT_SECRET is set to the default insecure value in production. "
+        "Set a strong random secret via the JWT_SECRET environment variable."
+    )
+
 bearer_scheme = HTTPBearer()
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
 def create_access_token(user_id: str) -> str:
@@ -86,7 +127,13 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(b
 
 
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@mealgoal.fr")
-ADMIN_PASSWORD_HASH = hash_password(os.environ.get("ADMIN_PASSWORD", "admin"))
+_raw_admin_password = os.environ.get("ADMIN_PASSWORD", "admin")
+if os.environ.get("ENV") == "production" and _raw_admin_password == "admin":
+    raise RuntimeError(
+        "FATAL: ADMIN_PASSWORD is set to the default insecure value in production. "
+        "Set a strong password via the ADMIN_PASSWORD environment variable."
+    )
+ADMIN_PASSWORD_HASH = hash_password(_raw_admin_password)
 
 
 async def get_current_admin(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
@@ -165,6 +212,9 @@ class UserProfileResponse(UserProfile):
     proteines_g: int
     glucides_g: int
     lipides_g: int
+    plan: str = "free"
+    trial_ends_at: Optional[str] = None
+    stripe_customer_id: Optional[str] = None
 
 class UserCreate(UserProfile):
     password: str = Field(min_length=8)
@@ -177,6 +227,13 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: Optional[dict] = None
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str = Field(min_length=8)
 
 class WeightLog(BaseModel):
     user_id: str
@@ -341,7 +398,19 @@ def init_default_foods():
         ]
         foods_collection.insert_many(default_foods)
 
-# Initialize foods on startup
+# ==================== STARTUP ====================
+
+def create_indexes():
+    """Create MongoDB indexes for performance and data integrity"""
+    users_collection.create_index("email", unique=True)
+    users_collection.create_index("id", unique=True)
+    reset_tokens_collection.create_index("token", unique=True)
+    reset_tokens_collection.create_index("expires_at", expireAfterSeconds=0)  # TTL auto-cleanup
+    meal_plans_collection.create_index([("user_id", ASCENDING), ("date", DESCENDING)])
+    weight_logs_collection.create_index([("user_id", ASCENDING), ("date", DESCENDING)])
+    logger.info("MongoDB indexes created")
+
+create_indexes()
 init_default_foods()
 
 def get_user_preferred_foods(preferences: FoodPreferences):
@@ -849,19 +918,25 @@ async def health_check():
 # ==================== AUTH ENDPOINTS ====================
 
 @app.post("/api/auth/login", response_model=TokenResponse)
-async def login(request: LoginRequest):
-    user = users_collection.find_one({"email": request.email})
-    if not user or not verify_password(request.password, user.get("password_hash", "")):
+@limiter.limit("5/minute")
+async def login(request: Request, credentials: LoginRequest):
+    user = users_collection.find_one({"email": credentials.email})
+    if not user or not verify_password(credentials.password, user.get("password_hash", "")):
+        logger.warning("Failed login attempt for email=%s ip=%s", credentials.email, request.client.host)
         raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+    logger.info("Successful login for user_id=%s", user["id"])
     token = create_access_token(user["id"])
     user_safe = {k: v for k, v in user.items() if k not in ("_id", "password_hash")}
     return TokenResponse(access_token=token, user=user_safe)
 
 
 @app.post("/api/auth/admin/login", response_model=TokenResponse)
-async def admin_login(request: LoginRequest):
-    if request.email != ADMIN_EMAIL or not verify_password(request.password, ADMIN_PASSWORD_HASH):
+@limiter.limit("3/minute")
+async def admin_login(request: Request, credentials: LoginRequest):
+    if credentials.email != ADMIN_EMAIL or not verify_password(credentials.password, ADMIN_PASSWORD_HASH):
+        logger.warning("Failed admin login attempt for email=%s ip=%s", credentials.email, request.client.host)
         raise HTTPException(status_code=401, detail="Identifiants administrateur incorrects")
+    logger.info("Admin login successful ip=%s", request.client.host)
     token = create_access_token("admin")
     return TokenResponse(access_token=token)
 
@@ -870,10 +945,97 @@ async def admin_login(request: LoginRequest):
 async def get_me(current_user: dict = Depends(get_current_user)):
     return current_user
 
+
+# ==================== PASSWORD RESET ====================
+
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+FROM_EMAIL = os.environ.get("FROM_EMAIL", "MealGoal <noreply@mealgoal.fr>")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+
+
+def send_reset_email(to_email: str, reset_url: str, first_name: str) -> bool:
+    """Send a password reset email via Resend. Falls back to logging in dev mode."""
+    if not RESEND_API_KEY:
+        logger.info("DEV — password reset URL for %s: %s", to_email, reset_url)
+        return False
+    try:
+        import resend as resend_sdk
+        resend_sdk.api_key = RESEND_API_KEY
+        resend_sdk.Emails.send({
+            "from": FROM_EMAIL,
+            "to": [to_email],
+            "subject": "Réinitialisation de votre mot de passe MealGoal",
+            "html": f"""
+            <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">
+              <h2 style="color:#111;margin-bottom:8px">Réinitialisation du mot de passe</h2>
+              <p style="color:#555">Bonjour {first_name or 'là'},</p>
+              <p style="color:#555">
+                Vous avez demandé à réinitialiser votre mot de passe MealGoal.
+                Cliquez sur le bouton ci-dessous — ce lien expire dans <strong>1 heure</strong>.
+              </p>
+              <a href="{reset_url}"
+                 style="display:inline-block;margin:24px 0;padding:14px 28px;
+                        background:#0080ff;color:#fff;border-radius:10px;
+                        text-decoration:none;font-weight:600">
+                Réinitialiser mon mot de passe
+              </a>
+              <p style="color:#999;font-size:13px">
+                Si vous n'avez pas fait cette demande, ignorez cet email.
+              </p>
+            </div>""",
+        })
+        return True
+    except Exception as exc:
+        logger.error("Failed to send reset email to %s: %s", to_email, exc)
+        return False
+
+
+@app.post("/api/auth/forgot-password")
+@limiter.limit("3/minute")
+async def forgot_password(request: Request, body: ForgotPasswordRequest):
+    """Request a password reset link. Always returns 200 to prevent email enumeration."""
+    user = users_collection.find_one({"email": body.email})
+    if user:
+        token = str(uuid.uuid4())
+        expires_at = datetime.utcnow() + timedelta(hours=1)
+        # Remove any existing unused tokens for this user
+        reset_tokens_collection.delete_many({"user_id": user["id"], "used": False})
+        reset_tokens_collection.insert_one({
+            "token": token,
+            "user_id": user["id"],
+            "email": user["email"],
+            "expires_at": expires_at,
+            "used": False,
+            "created_at": datetime.utcnow().isoformat(),
+        })
+        reset_url = f"{FRONTEND_URL}/reset-password?token={token}"
+        send_reset_email(user["email"], reset_url, user.get("prenom", ""))
+    return {"message": "Si cet email est enregistré, vous recevrez un lien de réinitialisation."}
+
+
+@app.post("/api/auth/reset-password")
+@limiter.limit("5/minute")
+async def reset_password(request: Request, body: ResetPasswordRequest):
+    """Validate a reset token and update the user's password."""
+    token_doc = reset_tokens_collection.find_one({"token": body.token, "used": False})
+    if not token_doc:
+        raise HTTPException(status_code=400, detail="Lien invalide ou déjà utilisé.")
+    if datetime.utcnow() > token_doc["expires_at"]:
+        raise HTTPException(status_code=400, detail="Lien expiré. Faites une nouvelle demande.")
+    users_collection.update_one(
+        {"id": token_doc["user_id"]},
+        {"$set": {"password_hash": hash_password(body.new_password)}},
+    )
+    reset_tokens_collection.update_one({"token": body.token}, {"$set": {"used": True}})
+    logger.info("Password reset successful for user_id=%s", token_doc["user_id"])
+    return {"message": "Mot de passe mis à jour avec succès."}
+
+
 # ==================== USER ENDPOINTS ====================
 
 @app.post("/api/users", response_model=TokenResponse)
-async def create_user(user: UserCreate):
+@limiter.limit("3/minute")
+async def create_user(request: Request, user: UserCreate):
     """Create a new user profile and calculate nutritional targets"""
 
     # Check if email already exists
@@ -896,6 +1058,9 @@ async def create_user(user: UserCreate):
     user_data["proteines_g"] = macros["proteines_g"]
     user_data["glucides_g"] = macros["glucides_g"]
     user_data["lipides_g"] = macros["lipides_g"]
+    user_data["plan"] = "free"
+    user_data["trial_ends_at"] = (datetime.now() + timedelta(days=14)).isoformat()
+    user_data["stripe_customer_id"] = None
 
     users_collection.insert_one(user_data)
 
@@ -914,24 +1079,28 @@ async def create_user(user: UserCreate):
     return TokenResponse(access_token=token, user=safe_user)
 
 @app.get("/api/users/{user_id}", response_model=UserProfileResponse)
-async def get_user(user_id: str):
+async def get_user(user_id: str, current_user=Depends(get_current_user)):
     """Get user profile by ID"""
+    if current_user["id"] != user_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
     user = users_collection.find_one({"id": user_id})
     if not user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
     return UserProfileResponse(**user)
 
 @app.get("/api/users/email/{email}", response_model=UserProfileResponse)
-async def get_user_by_email(email: str):
-    """Get user profile by email"""
+async def get_user_by_email(email: str, _admin=Depends(get_current_admin)):
+    """Get user profile by email (admin only)"""
     user = users_collection.find_one({"email": email})
     if not user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
     return UserProfileResponse(**user)
 
 @app.put("/api/users/{user_id}", response_model=UserProfileResponse)
-async def update_user(user_id: str, user: UserProfile):
+async def update_user(user_id: str, user: UserProfile, current_user=Depends(get_current_user)):
     """Update user profile and recalculate nutritional targets"""
+    if current_user["id"] != user_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
     existing = users_collection.find_one({"id": user_id})
     if not existing:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
@@ -953,6 +1122,25 @@ async def update_user(user_id: str, user: UserProfile):
     users_collection.update_one({"id": user_id}, {"$set": user_data})
     
     return UserProfileResponse(**user_data)
+
+
+@app.get("/api/users/{user_id}/export")
+async def export_user_data(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Export all data belonging to the authenticated user (RGPD portability)."""
+    if current_user["id"] != user_id:
+        raise HTTPException(status_code=403, detail="Accès refusé.")
+    profile = users_collection.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé.")
+    plans = list(meal_plans_collection.find({"user_id": user_id}, {"_id": 0}))
+    logs = list(weight_logs_collection.find({"user_id": user_id}, {"_id": 0}))
+    return {
+        "exported_at": datetime.utcnow().isoformat(),
+        "profile": profile,
+        "meal_plans": plans,
+        "weight_logs": logs,
+    }
+
 
 @app.delete("/api/users/{user_id}")
 async def delete_user(user_id: str, _admin=Depends(get_current_admin)):
@@ -981,8 +1169,10 @@ async def list_users(_admin=Depends(get_current_admin)):
 # ==================== MEAL PLAN ENDPOINTS ====================
 
 @app.post("/api/meal-plans/{user_id}")
-async def create_meal_plan(user_id: str, target_date: str = Query(default=None)):
+async def create_meal_plan(user_id: str, target_date: str = Query(default=None), current_user=Depends(get_current_user)):
     """Generate a meal plan for a user"""
+    if current_user["id"] != user_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
     user = users_collection.find_one({"id": user_id})
     if not user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
@@ -1003,8 +1193,10 @@ async def create_meal_plan(user_id: str, target_date: str = Query(default=None))
     return meal_plan
 
 @app.get("/api/meal-plans/{user_id}")
-async def get_meal_plans(user_id: str, date_from: str = None, date_to: str = None, limit: int = 30):
+async def get_meal_plans(user_id: str, date_from: str = None, date_to: str = None, limit: int = 30, current_user=Depends(get_current_user)):
     """Get meal plans for a user with history"""
+    if current_user["id"] != user_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
     query = {"user_id": user_id}
     if date_from and date_to:
         query["date"] = {"$gte": date_from, "$lte": date_to}
@@ -1079,8 +1271,10 @@ async def delete_meal_plan(plan_id: str, _admin=Depends(get_current_admin)):
     return {"message": "Plan supprimé"}
 
 @app.post("/api/meal-plans/{user_id}/regenerate")
-async def regenerate_meal_plan(user_id: str, target_date: str = Query(default=None)):
+async def regenerate_meal_plan(user_id: str, target_date: str = Query(default=None), current_user=Depends(get_current_user)):
     """Regenerate a meal plan for a specific date"""
+    if current_user["id"] != user_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
     user = users_collection.find_one({"id": user_id})
     if not user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
@@ -1098,8 +1292,10 @@ async def regenerate_meal_plan(user_id: str, target_date: str = Query(default=No
     return meal_plan
 
 @app.get("/api/meal-plans/{user_id}/today")
-async def get_today_meal_plan(user_id: str):
+async def get_today_meal_plan(user_id: str, current_user=Depends(get_current_user)):
     """Get or generate today's meal plan"""
+    if current_user["id"] != user_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
     user = users_collection.find_one({"id": user_id})
     if not user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
@@ -1119,8 +1315,10 @@ async def get_today_meal_plan(user_id: str):
 # ==================== WEIGHT LOG ENDPOINTS ====================
 
 @app.post("/api/weight-logs")
-async def create_weight_log(log: WeightLog):
+async def create_weight_log(log: WeightLog, current_user=Depends(get_current_user)):
     """Log a weight entry"""
+    if current_user["id"] != log.user_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
     user = users_collection.find_one({"id": log.user_id})
     if not user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
@@ -1146,14 +1344,18 @@ async def create_weight_log(log: WeightLog):
     return log_data
 
 @app.get("/api/weight-logs/{user_id}")
-async def get_weight_logs(user_id: str):
+async def get_weight_logs(user_id: str, current_user=Depends(get_current_user)):
     """Get all weight logs for a user"""
+    if current_user["id"] != user_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
     logs = list(weight_logs_collection.find({"user_id": user_id}, {"_id": 0}).sort("date", 1))
     return logs
 
 @app.get("/api/weight-logs/{user_id}/stats")
-async def get_weight_stats(user_id: str):
+async def get_weight_stats(user_id: str, current_user=Depends(get_current_user)):
     """Get weight statistics for a user"""
+    if current_user["id"] != user_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
     user = users_collection.find_one({"id": user_id})
     if not user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
@@ -1422,6 +1624,139 @@ async def get_nutritional_rules():
             }
         ]
     }
+
+# ==================== BILLING ENDPOINTS ====================
+
+import stripe as stripe_sdk
+
+STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+STRIPE_PRICE_ID_PRO = os.environ.get("STRIPE_PRICE_ID_PRO", "")
+STRIPE_PRICE_ID_COACH = os.environ.get("STRIPE_PRICE_ID_COACH", "")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+
+if STRIPE_SECRET_KEY:
+    stripe_sdk.api_key = STRIPE_SECRET_KEY
+
+
+class CheckoutRequest(BaseModel):
+    price_id: str  # STRIPE_PRICE_ID_PRO or STRIPE_PRICE_ID_COACH
+
+
+@app.get("/api/billing/status")
+async def get_billing_status(current_user=Depends(get_current_user)):
+    """Return the current user's plan and trial info"""
+    trial_ends_at = current_user.get("trial_ends_at")
+    trial_active = False
+    if trial_ends_at:
+        try:
+            trial_active = datetime.fromisoformat(trial_ends_at) > datetime.now()
+        except ValueError:
+            pass
+    return {
+        "plan": current_user.get("plan", "free"),
+        "trial_active": trial_active,
+        "trial_ends_at": trial_ends_at,
+    }
+
+
+@app.post("/api/billing/checkout")
+async def create_checkout_session(body: CheckoutRequest, current_user=Depends(get_current_user)):
+    """Create a Stripe Checkout session and return the URL"""
+    if not STRIPE_SECRET_KEY:
+        raise HTTPException(status_code=503, detail="Paiement non configuré sur ce serveur.")
+
+    try:
+        # Create or reuse a Stripe customer
+        customer_id = current_user.get("stripe_customer_id")
+        if not customer_id:
+            customer = stripe_sdk.Customer.create(
+                email=current_user["email"],
+                name=f"{current_user['prenom']} {current_user['nom']}",
+                metadata={"user_id": current_user["id"]},
+            )
+            customer_id = customer.id
+            users_collection.update_one(
+                {"id": current_user["id"]},
+                {"$set": {"stripe_customer_id": customer_id}},
+            )
+
+        session = stripe_sdk.checkout.Session.create(
+            customer=customer_id,
+            payment_method_types=["card"],
+            mode="subscription",
+            line_items=[{"price": body.price_id, "quantity": 1}],
+            success_url=f"{FRONTEND_URL}/dashboard?upgrade=success",
+            cancel_url=f"{FRONTEND_URL}/pricing?upgrade=cancelled",
+            metadata={"user_id": current_user["id"]},
+        )
+        return {"checkout_url": session.url}
+    except stripe_sdk.error.StripeError as e:
+        logger.error("Stripe error for user_id=%s: %s", current_user["id"], str(e))
+        raise HTTPException(status_code=500, detail="Erreur lors de la création de la session de paiement.")
+
+
+@app.post("/api/billing/webhook")
+async def stripe_webhook(request: Request):
+    """Handle Stripe webhook events (subscription lifecycle)"""
+    if not STRIPE_WEBHOOK_SECRET:
+        raise HTTPException(status_code=503, detail="Webhook non configuré.")
+
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature", "")
+
+    try:
+        event = stripe_sdk.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+    except stripe_sdk.error.SignatureVerificationError:
+        logger.warning("Invalid Stripe webhook signature")
+        raise HTTPException(status_code=400, detail="Signature invalide.")
+
+    event_type = event["type"]
+    logger.info("Stripe webhook received: %s", event_type)
+
+    if event_type == "checkout.session.completed":
+        session = event["data"]["object"]
+        user_id = session.get("metadata", {}).get("user_id")
+        price_id = session.get("line_items", [{}])[0].get("price", {}).get("id") if session.get("line_items") else None
+
+        # Determine plan from price_id
+        if price_id == STRIPE_PRICE_ID_COACH:
+            new_plan = "coach"
+        else:
+            new_plan = "pro"
+
+        if user_id:
+            users_collection.update_one(
+                {"id": user_id},
+                {"$set": {"plan": new_plan, "stripe_customer_id": session.get("customer")}},
+            )
+            logger.info("User %s upgraded to plan=%s", user_id, new_plan)
+
+    elif event_type in ("customer.subscription.deleted", "customer.subscription.paused"):
+        subscription = event["data"]["object"]
+        customer_id = subscription.get("customer")
+        if customer_id:
+            users_collection.update_one(
+                {"stripe_customer_id": customer_id},
+                {"$set": {"plan": "free"}},
+            )
+            logger.info("Subscription cancelled for customer=%s, downgraded to free", customer_id)
+
+    elif event_type == "customer.subscription.updated":
+        subscription = event["data"]["object"]
+        customer_id = subscription.get("customer")
+        status = subscription.get("status")
+        # If subscription becomes past_due or unpaid, downgrade
+        if status in ("past_due", "unpaid", "canceled"):
+            if customer_id:
+                users_collection.update_one(
+                    {"stripe_customer_id": customer_id},
+                    {"$set": {"plan": "free"}},
+                )
+                logger.warning("Subscription status=%s for customer=%s, downgraded to free", status, customer_id)
+
+    return {"received": True}
+
 
 if __name__ == "__main__":
     import uvicorn

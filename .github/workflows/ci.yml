@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Backend tests ────────────────────────────────────────────────────────────
+  test-backend:
+    name: Tests backend (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements-dev.txt
+
+      - name: Run pytest
+        working-directory: backend
+        run: pytest tests/ -v --tb=short
+
+  # ── Docker build check ───────────────────────────────────────────────────────
+  build-docker:
+    name: Build Docker images
+    needs: test-backend
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        run: docker build -f Dockerfile.backend -t mealgoal-backend:${{ github.sha }} .
+
+      - name: Build frontend image
+        run: |
+          docker build \
+            -f Dockerfile.frontend \
+            --build-arg VITE_BACKEND_URL=https://placeholder.example.com \
+            -t mealgoal-frontend:${{ github.sha }} .
