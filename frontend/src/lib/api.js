@@ -1,13 +1,11 @@
 import axios from 'axios';
 import { toast } from 'sonner';
 
-export const API_URL = import.meta.env.VITE_BACKEND_URL;
+// Empty string = use relative URLs (nginx proxies /api/ to the backend in prod)
+export const API_URL = import.meta.env.VITE_BACKEND_URL ?? '';
 
-if (!API_URL) {
-  console.error(
-    '[MealGoal] VITE_BACKEND_URL is not defined.\n' +
-    'Copy frontend/.env.example to frontend/.env and set the correct backend URL.'
-  );
+if (API_URL === undefined) {
+  console.warn('[MealGoal] VITE_BACKEND_URL is not defined — using relative /api/ paths.');
 }
 
 export const TOKEN_KEY = 'mealgoal_token';

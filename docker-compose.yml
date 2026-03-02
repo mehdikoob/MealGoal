@@ -42,7 +42,7 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
       args:
-        VITE_BACKEND_URL: ${VITE_BACKEND_URL:-http://localhost:8001}
+        VITE_BACKEND_URL: ${VITE_BACKEND_URL:-}
     restart: unless-stopped
     ports:
       - "80:80"
