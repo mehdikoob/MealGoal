@@ -4,7 +4,7 @@
     {
       "name": "frontend",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["start-frontend.js"],
+      "runtimeArgs": ["start-frontend.mjs"],
       "port": 3000
     },
     {
