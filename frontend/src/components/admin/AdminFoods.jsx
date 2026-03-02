@@ -28,7 +28,9 @@ const AdminFoods = () => {
     dejeuner: true,
     diner: true,
     collation: true,
-    unite_personnalisee: ''
+    unite_personnalisee: '',
+    food_type: 'main',
+    default_portion_g: ''
   });
 
   useEffect(() => {
@@ -89,7 +91,11 @@ const AdminFoods = () => {
         proteines_100g: parseFloat(formData.proteines_100g),
         glucides_100g: parseFloat(formData.glucides_100g),
         lipides_100g: parseFloat(formData.lipides_100g),
-        unite_personnalisee: formData.unite_personnalisee || null
+        unite_personnalisee: formData.unite_personnalisee || null,
+        food_type: formData.food_type || 'main',
+        default_portion_g: formData.food_type === 'companion' && formData.default_portion_g
+          ? parseFloat(formData.default_portion_g)
+          : null,
       };
 
       if (editingFood) {
@@ -111,7 +117,9 @@ const AdminFoods = () => {
         dejeuner: true,
         diner: true,
         collation: true,
-        unite_personnalisee: ''
+        unite_personnalisee: '',
+        food_type: 'main',
+        default_portion_g: ''
       });
       fetchFoods();
     } catch (error) {
@@ -132,7 +140,9 @@ const AdminFoods = () => {
       dejeuner: food.dejeuner !== false,
       diner: food.diner !== false,
       collation: food.collation !== false,
-      unite_personnalisee: food.unite_personnalisee || ''
+      unite_personnalisee: food.unite_personnalisee || '',
+      food_type: food.food_type || 'main',
+      default_portion_g: food.default_portion_g || ''
     });
     setShowModal(true);
   };
@@ -441,6 +451,50 @@ const AdminFoods = () => {
                 </label>
               </div>
             </div>
+
+            <div className="form-group">
+              <label>Type d'aliment</label>
+              <div className="checkbox-row">
+                <label className={`checkbox-pill ${formData.food_type === 'main' ? 'active' : ''}`}>
+                  <input
+                    type="radio"
+                    name="food_type"
+                    value="main"
+                    checked={formData.food_type === 'main'}
+                    onChange={() => setFormData({ ...formData, food_type: 'main', default_portion_g: '' })}
+                  />
+                  Aliment principal
+                </label>
+                <label className={`checkbox-pill ${formData.food_type === 'companion' ? 'active' : ''}`}>
+                  <input
+                    type="radio"
+                    name="food_type"
+                    value="companion"
+                    checked={formData.food_type === 'companion'}
+                    onChange={() => setFormData({ ...formData, food_type: 'companion' })}
+                  />
+                  Companion (condiment / saveur)
+                </label>
+              </div>
+              <span className="form-hint">
+                Un companion s'ajoute automatiquement aux repas compatibles (ex: miel dans le skyr).
+              </span>
+            </div>
+
+            {formData.food_type === 'companion' && (
+              <div className="form-group">
+                <label>Portion par défaut (g)</label>
+                <input
+                  type="number"
+                  value={formData.default_portion_g}
+                  onChange={e => setFormData({ ...formData, default_portion_g: e.target.value })}
+                  placeholder="Ex: 15"
+                  min="1"
+                  max="100"
+                />
+                <span className="form-hint">Quantité fixe ajoutée à chaque repas compatible.</span>
+              </div>
+            )}
 
             <div className="modal-actions">
               <button className="btn-secondary" onClick={() => setShowModal(false)}>

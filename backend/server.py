@@ -179,9 +179,14 @@ class CopyMealPreference(str, Enum):
 # ==================== MODELS ====================
 
 class FoodPreferences(BaseModel):
-    carbs: List[str] = []  # pates, riz, flocons_avoine, pommes_de_terre, pain_complet
-    proteins: List[str] = []  # poulet, boeuf_hache, oeufs, poisson_blanc, whey, skyr
-    fats: List[str] = []  # amandes, noix, jaune_oeuf, huile_olive, beurre_cacahuete
+    # Nouveau format — noms d'aliments directs depuis la DB
+    glucides: List[str] = []    # ex: ["Pâtes (cuites)", "Riz blanc (cuit)"]
+    proteines: List[str] = []   # ex: ["Poulet (blanc)", "Skyr"]
+    lipides: List[str] = []     # ex: ["Amandes"]
+    # Backward compat — anciens slugs (pates, riz, poulet…)
+    carbs: List[str] = []
+    proteins: List[str] = []
+    fats: List[str] = []
 
 class UserProfile(BaseModel):
     email: EmailStr
@@ -252,6 +257,8 @@ class Food(BaseModel):
     diner: bool = True
     collation: bool = True
     unite_personnalisee: Optional[str] = None  # ex: "1 oeuf", "1 tranche", None = 100g
+    food_type: str = "main"                    # "main" | "companion"
+    default_portion_g: Optional[float] = None  # portion fixe pour companions (ex: 15g de miel)
 
 class FoodResponse(Food):
     id: str
@@ -375,7 +382,7 @@ def init_default_foods():
             {"id": str(uuid.uuid4()), "nom": "Pain complet", "categorie": "glucides", "calories_100g": 247, "proteines_100g": 13, "glucides_100g": 41, "lipides_100g": 3.4, "petit_dejeuner": True, "dejeuner": True, "diner": False, "collation": True},
             {"id": str(uuid.uuid4()), "nom": "Banane", "categorie": "glucides", "calories_100g": 89, "proteines_100g": 1.1, "glucides_100g": 22.8, "lipides_100g": 0.3, "petit_dejeuner": True, "dejeuner": False, "diner": False, "collation": True},
             {"id": str(uuid.uuid4()), "nom": "Pomme", "categorie": "glucides", "calories_100g": 52, "proteines_100g": 0.3, "glucides_100g": 14, "lipides_100g": 0.2, "petit_dejeuner": True, "dejeuner": False, "diner": False, "collation": True},
-            {"id": str(uuid.uuid4()), "nom": "Miel", "categorie": "glucides", "calories_100g": 304, "proteines_100g": 0.3, "glucides_100g": 82, "lipides_100g": 0, "petit_dejeuner": True, "dejeuner": False, "diner": False, "collation": True},
+            {"id": str(uuid.uuid4()), "nom": "Miel", "categorie": "glucides", "calories_100g": 304, "proteines_100g": 0.3, "glucides_100g": 82, "lipides_100g": 0, "petit_dejeuner": True, "dejeuner": False, "diner": False, "collation": True, "food_type": "companion", "default_portion_g": 15},
             
             # Protéines
             {"id": str(uuid.uuid4()), "nom": "Poulet (blanc)", "categorie": "proteines", "calories_100g": 165, "proteines_100g": 31, "glucides_100g": 0, "lipides_100g": 3.6, "petit_dejeuner": False, "dejeuner": True, "diner": True, "collation": False},
@@ -410,57 +417,69 @@ def create_indexes():
     weight_logs_collection.create_index([("user_id", ASCENDING), ("date", DESCENDING)])
     logger.info("MongoDB indexes created")
 
+def migrate_food_fields():
+    """Ajoute food_type/default_portion_g aux aliments existants qui ne les ont pas encore."""
+    foods_collection.update_many(
+        {"food_type": {"$exists": False}},
+        {"$set": {"food_type": "main", "default_portion_g": None}}
+    )
+    # S'assurer que le miel est bien marqué companion
+    foods_collection.update_one(
+        {"nom": "Miel"},
+        {"$set": {"food_type": "companion", "default_portion_g": 15}}
+    )
+
 create_indexes()
 init_default_foods()
+migrate_food_fields()
+
+_OLD_SLUG_MAP: dict = {
+    # glucides
+    "pates":          "Pâtes (cuites)",
+    "riz":            "Riz blanc (cuit)",
+    "flocons_avoine": "Flocons d'avoine",
+    "pommes_de_terre":"Pommes de terre (cuites)",
+    "patates_douces": "Patate douce (cuite)",
+    "pain_complet":   "Pain complet",
+    # proteines
+    "poulet":         "Poulet (blanc)",
+    "boeuf_hache":    "Boeuf haché 5%",
+    "oeufs":          "Oeufs entiers",
+    "poisson_blanc":  "Cabillaud",
+    "whey":           "Whey protéine",
+    "skyr":           "Skyr",
+    # lipides
+    "amandes":        "Amandes",
+    "noix":           "Noix",
+    "huile_olive":    "Huile d'olive",
+    "beurre_cacahuete":"Beurre de cacahuète",
+}
 
 def get_user_preferred_foods(preferences: FoodPreferences):
-    """Get foods based on user preferences"""
+    """Renvoie les aliments préférés de l'utilisateur groupés par catégorie.
+
+    Supporte les deux formats :
+    - Nouveau : glucides/proteines/lipides contiennent des noms d'aliments directs
+    - Ancien  : carbs/proteins/fats contiennent des slugs (pates, riz, poulet…)
+    """
     preferred_foods = {"glucides": [], "proteines": [], "lipides": []}
-    
-    # Map preference keys to food names
-    carb_map = {
-        "pates": "Pâtes (cuites)",
-        "riz": "Riz blanc (cuit)",
-        "flocons_avoine": "Flocons d'avoine",
-        "pommes_de_terre": "Pommes de terre (cuites)",
-        "patates_douces": "Patate douce (cuite)",
-        "pain_complet": "Pain complet"
-    }
-    
-    protein_map = {
-        "poulet": "Poulet (blanc)",
-        "boeuf_hache": "Boeuf haché 5%",
-        "oeufs": "Oeufs entiers",
-        "poisson_blanc": "Cabillaud",
-        "whey": "Whey protéine",
-        "skyr": "Skyr"
-    }
-    
-    fat_map = {
-        "amandes": "Amandes",
-        "noix": "Noix",
-        "huile_olive": "Huile d'olive",
-        "beurre_cacahuete": "Beurre de cacahuète"
-    }
-    
-    for pref in preferences.carbs:
-        if pref in carb_map:
-            food = foods_collection.find_one({"nom": carb_map[pref]})
+
+    # Priorité au nouveau format, fallback sur l'ancien
+    all_glucides  = preferences.glucides  or preferences.carbs
+    all_proteines = preferences.proteines or preferences.proteins
+    all_lipides   = preferences.lipides   or preferences.fats
+
+    for cat, names in [
+        ("glucides",  all_glucides),
+        ("proteines", all_proteines),
+        ("lipides",   all_lipides),
+    ]:
+        for name in names:
+            resolved = _OLD_SLUG_MAP.get(name, name)  # convertit slug si besoin
+            food = foods_collection.find_one({"nom": resolved})
             if food:
-                preferred_foods["glucides"].append(food)
-    
-    for pref in preferences.proteins:
-        if pref in protein_map:
-            food = foods_collection.find_one({"nom": protein_map[pref]})
-            if food:
-                preferred_foods["proteines"].append(food)
-    
-    for pref in preferences.fats:
-        if pref in fat_map:
-            food = foods_collection.find_one({"nom": fat_map[pref]})
-            if food:
-                preferred_foods["lipides"].append(food)
-    
+                preferred_foods[cat].append(food)
+
     return preferred_foods
 
 # ── Portion profiles ─────────────────────────────────────────────────────────
@@ -759,7 +778,8 @@ def generate_meal_schedule(user: dict) -> List[dict]:
                 meals.append({
                     "nom": f"Repas {i + 1}",
                     "heure": minutes_to_time(meal_time),
-                    "is_main": (pref_copieux == "midi" and i == 0) or (pref_copieux == "soir" and i == nombre_repas - 1)
+                    "is_main": (pref_copieux == "midi" and i == 0) or (pref_copieux == "soir" and i == nombre_repas - 1),
+                    "type_key": "dejeuner" if i == 0 else "diner",
                 })
     else:
         # Classic mode
@@ -793,10 +813,63 @@ def generate_meal_schedule(user: dict) -> List[dict]:
             meals.append({
                 "nom": nom,
                 "heure": minutes_to_time(meal_time),
-                "is_main": is_main
+                "is_main": is_main,
+                "type_key": _MEAL_TYPE_KEY.get(nom, "dejeuner"),
             })
     
     return meals
+
+# ── Companion food logic ──────────────────────────────────────────────────────
+# Aliments "sweet-compatible" : un companion glucidique (miel…) peut être ajouté
+# seulement si l'un de ces aliments est déjà dans le repas.
+_SWEET_COMPATIBLE_FOODS: set = {"Skyr", "Fromage blanc 0%", "Flocons d'avoine"}
+_GLUCIDE_COMPANION_MEALS: set = {"petit_dejeuner", "collation"}
+_LIPIDE_COMPANION_MEALS:  set = {"dejeuner", "diner"}
+
+def apply_companion_foods(
+    companion_foods: list,
+    meal_items: list,
+    meal_type_key: str,
+) -> tuple:
+    """Ajoute les companions compatibles au repas et renvoie les macros ajoutées."""
+    added_carb = 0.0
+    added_fat  = 0.0
+    meal_food_names = {item["food_name"] for item in meal_items}
+
+    for companion in companion_foods:
+        portion_g = companion.get("default_portion_g") or 15
+        cat = companion["categorie"]
+
+        if cat == "glucides" and meal_type_key in _GLUCIDE_COMPANION_MEALS:
+            # N'ajouter que si un aliment "sweet-compatible" est déjà dans le repas
+            if not (meal_food_names & _SWEET_COMPATIBLE_FOODS):
+                continue
+        elif cat == "lipides" and meal_type_key in _LIPIDE_COMPANION_MEALS:
+            pass  # Compatible avec tout repas principal
+        else:
+            continue
+
+        item_cal  = (companion["calories_100g"]  / 100) * portion_g
+        item_prot = (companion["proteines_100g"] / 100) * portion_g
+        item_carb = (companion["glucides_100g"]  / 100) * portion_g
+        item_fat  = (companion["lipides_100g"]   / 100) * portion_g
+
+        meal_items.append({
+            "food_id":    companion.get("id", ""),
+            "food_name":  companion["nom"],
+            "quantity_g": round(portion_g),
+            "categorie":  cat,
+            "calories":   round(item_cal, 1),
+            "proteines":  round(item_prot, 1),
+            "glucides":   round(item_carb, 1),
+            "lipides":    round(item_fat, 1),
+            "equivalents": [],
+        })
+        if cat == "glucides": added_carb += item_carb
+        if cat == "lipides":  added_fat  += item_fat
+
+    return meal_items, added_carb, added_fat
+
 
 def generate_meal_plan(user: dict, target_date: str) -> dict:
     """Generate a complete meal plan for a user"""
@@ -824,12 +897,20 @@ def generate_meal_plan(user: dict, target_date: str) -> dict:
         regular_meal_calories = calories_target / len(meal_schedule)
         main_meal_calories = regular_meal_calories
     
+    # Séparer les companions des aliments principaux
+    companion_foods: list = []
+    for cat in ("glucides", "lipides"):
+        companions = [f for f in preferred_foods[cat] if f.get("food_type") == "companion"]
+        main_foods  = [f for f in preferred_foods[cat] if f.get("food_type") != "companion"]
+        companion_foods.extend(companions)
+        preferred_foods[cat] = main_foods
+
     meals = []
     total_cal = 0
     total_prot = 0
     total_carb = 0
     total_fat = 0
-    
+
     for schedule in meal_schedule:
         meal_calories = main_meal_calories if schedule["is_main"] else regular_meal_calories
         meal_items = []
@@ -1013,6 +1094,15 @@ def generate_meal_plan(user: dict, target_date: str) -> dict:
                 meal_carb += item_carb
                 meal_fat += item_fat
         
+        # Ajouter les companions (miel sur skyr, etc.) après les aliments principaux
+        if companion_foods:
+            meal_items, added_carb, added_fat = apply_companion_foods(
+                companion_foods, meal_items, schedule.get("type_key", "")
+            )
+            meal_carb += added_carb
+            meal_fat  += added_fat
+            meal_cal  += added_carb * 4 + added_fat * 9  # approximation calorique
+
         meals.append({
             "nom": schedule["nom"],
             "heure": schedule["heure"],
@@ -1193,8 +1283,13 @@ async def create_user(request: Request, user: UserCreate):
     user_data["proteines_g"] = macros["proteines_g"]
     user_data["glucides_g"] = macros["glucides_g"]
     user_data["lipides_g"] = macros["lipides_g"]
-    user_data["plan"] = "free"
-    user_data["trial_ends_at"] = (datetime.now() + timedelta(days=14)).isoformat()
+    # Le compte admin bénéficie d'un accès pro permanent pour tester l'app
+    if user_data["email"].lower() == ADMIN_EMAIL.lower():
+        user_data["plan"] = "pro"
+        user_data["trial_ends_at"] = None
+    else:
+        user_data["plan"] = "free"
+        user_data["trial_ends_at"] = (datetime.now() + timedelta(days=14)).isoformat()
     user_data["stripe_customer_id"] = None
 
     users_collection.insert_one(user_data)

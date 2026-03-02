@@ -1,14 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_URL } from '../lib/api';
 import Icons from '../constants/icons';
-import FOOD_OPTIONS from '../constants/foodOptions';
 import LoadingAnimation from './LoadingAnimation';
 
 // Questionnaire Component
 const Questionnaire = ({ onComplete }) => {
   const [step, setStep] = useState(1);
   const [isCalculating, setIsCalculating] = useState(false);
+
+  // Aliments chargés dynamiquement depuis l'API
+  const [availableFoods, setAvailableFoods] = useState({ glucides: [], proteines: [], lipides: [] });
+  const [foodsLoading, setFoodsLoading] = useState(true);
+
+  useEffect(() => {
+    axios.get(`${API_URL}/api/foods`)
+      .then(res => {
+        const grouped = { glucides: [], proteines: [], lipides: [] };
+        res.data
+          .filter(f => (f.food_type || 'main') === 'main')  // exclure les companions
+          .forEach(food => {
+            if (grouped[food.categorie]) grouped[food.categorie].push(food);
+          });
+        setAvailableFoods(grouped);
+      })
+      .catch(() => {/* silencieux — fallback liste vide */})
+      .finally(() => setFoodsLoading(false));
+  }, []);
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -26,9 +45,9 @@ const Questionnaire = ({ onComplete }) => {
     niveau_activite: '',
     objectif: '',
     preferences: {
-      carbs: [],
-      proteins: [],
-      fats: []
+      glucides: [],
+      proteines: [],
+      lipides: []
     },
     heure_reveil: '07:00',
     heure_entrainement: '18:00',
@@ -420,65 +439,39 @@ const Questionnaire = ({ onComplete }) => {
             <h2>Préférences alimentaires</h2>
             <p className="step-description">Sélectionnez les aliments que vous souhaitez inclure</p>
 
-            <div className="preferences-section">
-              <h3>Sources de glucides</h3>
-              <div className="checkbox-grid">
-                {FOOD_OPTIONS.carbs.map(option => (
-                  <label
-                    key={option.value}
-                    className={`checkbox-option ${formData.preferences.carbs.includes(option.value) ? 'selected' : ''}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.preferences.carbs.includes(option.value)}
-                      onChange={() => togglePreference('carbs', option.value)}
-                    />
-                    <span className="checkbox-label">{option.label}</span>
-                    {formData.preferences.carbs.includes(option.value) && <Icons.Check />}
-                  </label>
+            {foodsLoading ? (
+              <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem 0' }}>
+                Chargement des aliments…
+              </p>
+            ) : (
+              <>
+                {[
+                  { key: 'glucides',  label: 'Sources de glucides' },
+                  { key: 'proteines', label: 'Sources de protéines' },
+                  { key: 'lipides',   label: 'Sources de lipides' },
+                ].map(({ key, label }) => (
+                  <div key={key} className="preferences-section">
+                    <h3>{label}</h3>
+                    <div className="checkbox-grid">
+                      {availableFoods[key].map(food => (
+                        <label
+                          key={food.nom}
+                          className={`checkbox-option ${formData.preferences[key].includes(food.nom) ? 'selected' : ''}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.preferences[key].includes(food.nom)}
+                            onChange={() => togglePreference(key, food.nom)}
+                          />
+                          <span className="checkbox-label">{food.nom}</span>
+                          {formData.preferences[key].includes(food.nom) && <Icons.Check />}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                 ))}
-              </div>
-            </div>
-
-            <div className="preferences-section">
-              <h3>Sources de protéines</h3>
-              <div className="checkbox-grid">
-                {FOOD_OPTIONS.proteins.map(option => (
-                  <label
-                    key={option.value}
-                    className={`checkbox-option ${formData.preferences.proteins.includes(option.value) ? 'selected' : ''}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.preferences.proteins.includes(option.value)}
-                      onChange={() => togglePreference('proteins', option.value)}
-                    />
-                    <span className="checkbox-label">{option.label}</span>
-                    {formData.preferences.proteins.includes(option.value) && <Icons.Check />}
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="preferences-section">
-              <h3>Sources de lipides</h3>
-              <div className="checkbox-grid">
-                {FOOD_OPTIONS.fats.map(option => (
-                  <label
-                    key={option.value}
-                    className={`checkbox-option ${formData.preferences.fats.includes(option.value) ? 'selected' : ''}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.preferences.fats.includes(option.value)}
-                      onChange={() => togglePreference('fats', option.value)}
-                    />
-                    <span className="checkbox-label">{option.label}</span>
-                    {formData.preferences.fats.includes(option.value) && <Icons.Check />}
-                  </label>
-                ))}
-              </div>
-            </div>
+              </>
+            )}
           </div>
         )}
 
