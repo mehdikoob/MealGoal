@@ -463,6 +463,141 @@ def get_user_preferred_foods(preferences: FoodPreferences):
     
     return preferred_foods
 
+# ── Portion profiles ─────────────────────────────────────────────────────────
+# Defines realistic per-meal limits and meal-type affinities for each protein.
+# max_protein_g : max protein contribution from this source in one meal
+# min_protein_g : minimum worth adding (skip if remainder is below this)
+# preferred     : meal types where this food is a natural fit
+# avoid         : meal types to exclude this food from
+FOOD_PORTION_PROFILES: dict = {
+    "Whey protéine": {
+        "max_protein_g": 50,   # ≤ 2 scoops
+        "min_protein_g": 20,   # at least 1 scoop
+        "preferred": ["collation", "post_training"],
+        "avoid": [],
+    },
+    "Oeufs entiers": {
+        "max_protein_g": 24,   # ≤ 4 eggs (6 g each)
+        "min_protein_g": 6,    # at least 1 egg
+        "preferred": ["petit_dejeuner", "collation"],
+        "avoid": [],
+        "skip_extra_lipids": True,  # yolks already supply fat
+    },
+    "Boeuf haché 5%": {
+        "max_protein_g": 52,   # ≈ 200 g
+        "min_protein_g": 20,
+        "preferred": ["dejeuner", "diner"],
+        "avoid": ["petit_dejeuner"],
+    },
+    "Poulet (blanc)": {
+        "max_protein_g": 55,   # ≈ 200 g
+        "min_protein_g": 20,
+        "preferred": ["dejeuner", "diner"],
+        "avoid": ["petit_dejeuner"],
+    },
+    "Cabillaud": {
+        "max_protein_g": 40,   # ≈ 200 g
+        "min_protein_g": 20,
+        "preferred": ["dejeuner", "diner"],
+        "avoid": ["petit_dejeuner"],
+    },
+    "Skyr": {
+        "max_protein_g": 20,   # ≈ 200 g
+        "min_protein_g": 8,
+        "preferred": ["petit_dejeuner", "collation"],
+        "avoid": [],
+    },
+}
+
+# Meal-name → profile key mapping
+_MEAL_TYPE_KEY: dict = {
+    "Petit-déjeuner":    "petit_dejeuner",
+    "Déjeuner":          "dejeuner",
+    "Collation":         "collation",
+    "Dîner":             "diner",
+    "Collation tardive": "collation",
+    # Intermittent fasting slots (dynamic names)
+    "Repas 1":           "dejeuner",
+    "Repas 2":           "diner",
+    "Repas 3":           "diner",
+    "Repas 4":           "collation",
+}
+
+
+def distribute_proteins_for_meal(
+    protein_sources: list,
+    protein_target_g: float,
+    meal_name: str,
+) -> list:
+    """
+    Split a meal's protein target intelligently across multiple food sources.
+
+    Returns a list of dicts:
+        { food, quantity_g, actual_protein_g, skip_extra_lipids }
+
+    Rules
+    -----
+    * Sort sources by affinity: preferred meals > neutral > avoided.
+    * Allocate up to max_protein_g from each source in order.
+    * Skip a source if the remaining target is below its min_protein_g
+      (unless it is the last available source).
+    * Rounds quantities to the nearest 5 g for clean portions.
+    """
+    if not protein_sources or protein_target_g <= 0:
+        return []
+
+    meal_key = _MEAL_TYPE_KEY.get(meal_name, "dejeuner")
+
+    def _score(food: dict) -> int:
+        p = FOOD_PORTION_PROFILES.get(food.get("nom", ""), {})
+        if meal_key in p.get("avoid", []):
+            return -1
+        if meal_key in p.get("preferred", []):
+            return 2
+        return 1
+
+    # Sort: preferred first, avoided last
+    scored = sorted(protein_sources, key=_score, reverse=True)
+    usable = [f for f in scored if _score(f) >= 0]
+    if not usable:
+        usable = scored  # fallback: ignore affinity
+
+    result = []
+    remaining = protein_target_g
+
+    for idx, food in enumerate(usable):
+        if remaining <= 0:
+            break
+
+        profile   = FOOD_PORTION_PROFILES.get(food.get("nom", ""), {})
+        max_prot  = profile.get("max_protein_g", 50)
+        min_prot  = profile.get("min_protein_g", 10)
+        prot_per_100 = food.get("proteines_100g", 1) or 1
+        is_last   = idx == len(usable) - 1
+
+        allocated = min(remaining, max_prot)
+
+        # Skip tiny additions unless this is the last (and only) source
+        if allocated < min_prot and not is_last:
+            continue
+
+        # Quantity in grams, rounded to nearest 5 g
+        quantity_g = round((allocated / prot_per_100) * 100 / 5) * 5
+        quantity_g = max(quantity_g, 5)
+
+        actual_prot = (prot_per_100 / 100) * quantity_g
+        remaining  -= actual_prot
+
+        result.append({
+            "food":              food,
+            "quantity_g":        quantity_g,
+            "actual_protein_g":  round(actual_prot, 1),
+            "skip_extra_lipids": profile.get("skip_extra_lipids", False),
+        })
+
+    return result
+
+
 def find_equivalents(food: dict, user_preferences: dict, meal_type: str, max_equivalents: int = 2) -> list:
     """
     Find equivalent foods based on the same category.
@@ -713,71 +848,74 @@ def generate_meal_plan(user: dict, target_date: str) -> dict:
             meal_carb_target *= 1.3
             meal_fat_target *= 1.3
         
-        # Add protein source
-        skip_separate_lipids = False  # Flag to skip adding extra lipids when whole eggs are used
-        
+        # ── Protein sources — multi-source smart distribution ─────────────────
+        skip_separate_lipids = False
+
+        user_prefs = {
+            "proteins": list(preferences.proteins),
+            "carbs":    list(preferences.carbs),
+            "fats":     list(preferences.fats),
+        }
+
         if preferred_foods["proteines"]:
-            protein_food = preferred_foods["proteines"][len(meals) % len(preferred_foods["proteines"])]
-            quantity = (meal_prot_target / protein_food["proteines_100g"]) * 100
-            quantity = round(quantity / 10) * 10  # Round to nearest 10g
-            
-            item_cal = (protein_food["calories_100g"] / 100) * quantity
-            item_prot = (protein_food["proteines_100g"] / 100) * quantity
-            item_carb = (protein_food["glucides_100g"] / 100) * quantity
-            item_fat = (protein_food["lipides_100g"] / 100) * quantity
-            
-            # Check if whole eggs are used - they contain enough lipids in the yolk
-            # so we don't need to add separate fat sources
-            if protein_food["nom"] == "Oeufs entiers":
-                skip_separate_lipids = True
-            
-            # Find equivalents
-            user_prefs = {
-                "proteins": [p for p in preferences.proteins],
-                "carbs": [c for c in preferences.carbs],
-                "fats": [f for f in preferences.fats]
-            }
-            equivalents = find_equivalents(protein_food, user_prefs, schedule["nom"])
-            
-            # Calculate equivalent quantities
-            equiv_list = []
-            for eq in equivalents:
-                # Calculate quantity to match same protein amount
-                eq_quantity = (item_prot / eq["proteines_100g"]) * 100 if eq["proteines_100g"] > 0 else 0
-                eq_quantity = round(eq_quantity / 10) * 10
-                
-                # Format quantity display
-                if eq["unite_personnalisee"]:
-                    # For items like eggs, calculate number of units
-                    # Assuming nutritional values stored are per 1 unit
-                    units_needed = round(eq_quantity / 100 * (100 / eq["proteines_100g"]) * eq["proteines_100g"] / eq["proteines_100g"])
-                    units_needed = max(1, round(item_prot / eq["proteines_100g"]))
-                    qty_display = f"{units_needed} {eq['unite_personnalisee'].replace('1 ', '')}" if units_needed > 1 else eq['unite_personnalisee']
-                else:
-                    qty_display = f"{int(eq_quantity)}g"
-                
-                equiv_list.append({
-                    "food_id": eq["food_id"],
-                    "food_name": eq["food_name"],
-                    "quantity": qty_display,
-                    "unite_personnalisee": eq["unite_personnalisee"]
+            distributions = distribute_proteins_for_meal(
+                preferred_foods["proteines"],
+                meal_prot_target,
+                schedule["nom"],
+            )
+
+            for dist in distributions:
+                protein_food = dist["food"]
+                quantity     = dist["quantity_g"]
+
+                item_cal  = (protein_food["calories_100g"]  / 100) * quantity
+                item_prot = (protein_food["proteines_100g"] / 100) * quantity
+                item_carb = (protein_food["glucides_100g"]  / 100) * quantity
+                item_fat  = (protein_food["lipides_100g"]   / 100) * quantity
+
+                # If any protein source supplies its own fat (eggs), skip
+                # adding a separate fat item for the whole meal
+                if dist["skip_extra_lipids"]:
+                    skip_separate_lipids = True
+
+                equivalents = find_equivalents(protein_food, user_prefs, schedule["nom"])
+
+                equiv_list = []
+                for eq in equivalents:
+                    eq_quantity = (item_prot / eq["proteines_100g"]) * 100 if eq["proteines_100g"] > 0 else 0
+                    eq_quantity = round(eq_quantity / 10) * 10
+
+                    if eq["unite_personnalisee"]:
+                        units_needed = max(1, round(item_prot / eq["proteines_100g"]))
+                        qty_display = (
+                            f"{units_needed} {eq['unite_personnalisee'].replace('1 ', '')}"
+                            if units_needed > 1 else eq["unite_personnalisee"]
+                        )
+                    else:
+                        qty_display = f"{int(eq_quantity)}g"
+
+                    equiv_list.append({
+                        "food_id":           eq["food_id"],
+                        "food_name":         eq["food_name"],
+                        "quantity":          qty_display,
+                        "unite_personnalisee": eq["unite_personnalisee"],
+                    })
+
+                meal_items.append({
+                    "food_id":    protein_food["id"],
+                    "food_name":  protein_food["nom"],
+                    "quantity_g": quantity,
+                    "categorie":  "proteines",
+                    "calories":   round(item_cal, 1),
+                    "proteines":  round(item_prot, 1),
+                    "glucides":   round(item_carb, 1),
+                    "lipides":    round(item_fat, 1),
+                    "equivalents": equiv_list if equiv_list else None,
                 })
-            
-            meal_items.append({
-                "food_id": protein_food["id"],
-                "food_name": protein_food["nom"],
-                "quantity_g": quantity,
-                "categorie": "proteines",
-                "calories": round(item_cal, 1),
-                "proteines": round(item_prot, 1),
-                "glucides": round(item_carb, 1),
-                "lipides": round(item_fat, 1),
-                "equivalents": equiv_list if equiv_list else None
-            })
-            meal_cal += item_cal
-            meal_prot += item_prot
-            meal_carb += item_carb
-            meal_fat += item_fat
+                meal_cal  += item_cal
+                meal_prot += item_prot
+                meal_carb += item_carb
+                meal_fat  += item_fat
         
         # Add carb source
         if preferred_foods["glucides"]:
