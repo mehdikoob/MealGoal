@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "Bash(cmd //c \"where node && where python && where npx\")",
+      "Bash(cmd //c \"where python3\")",
+      "Bash(cmd //c \"py --version\")",
+      "Bash(cmd //c \"python --version\")",
+      "Bash(cmd //c \"py -3 --version\")",
+      "Bash(git add .claude/launch.json)",
+      "Bash(git commit:*)",
+      "Bash(cmd //c \"cd /d C:\\\\Users\\\\mehdi\\\\MealGoal\\\\.claude\\\\worktrees\\\\loving-lederberg\\\\frontend && npm install\")",
+      "Bash(cmd //c \"cd /d C:\\\\Users\\\\mehdi\\\\MealGoal\\\\.claude\\\\worktrees\\\\loving-lederberg\\\\frontend && npm install --legacy-peer-deps\")",
+      "Bash(cmd //c \"cd /d C:\\\\Users\\\\mehdi\\\\MealGoal\\\\.claude\\\\worktrees\\\\loving-lederberg\\\\frontend && npm install ajv@8 --legacy-peer-deps\")",
+      "Bash(git config user.email \"mehdi@example.com\")",
+      "Bash(git config user.name \"Mehdi\")",
+      "Bash(git add .claude/launch.json .claude/settings.local.json frontend/package.json frontend/package-lock.json start-frontend.js)"
+    ]
+  }
+}
