@@ -515,6 +515,7 @@ body {
 .form-group input[type="number"],
 .form-group input[type="date"],
 .form-group input[type="time"],
+.form-group input[type="password"],
 .form-group select {
   width: 100%;
   padding: 14px 16px;
@@ -3716,5 +3717,557 @@ body {
   .foods-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ============================================================
+   TRIAL BANNER
+   ============================================================ */
+.trial-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: linear-gradient(90deg, rgba(0, 128, 255, 0.08), rgba(0, 128, 255, 0.04));
+  border-bottom: 1px solid rgba(0, 128, 255, 0.15);
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.trial-banner svg {
+  width: 16px;
+  height: 16px;
+  color: var(--brand-primary);
+  flex-shrink: 0;
+}
+
+.trial-banner strong {
+  color: var(--brand-primary);
+}
+
+.trial-upgrade-btn {
+  margin-left: auto;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--brand-primary);
+  background: transparent;
+  color: var(--brand-primary);
+  font-family: 'Satoshi', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
+}
+
+.trial-upgrade-btn:hover {
+  background: var(--brand-primary);
+  color: #fff;
+}
+
+/* ============================================================
+   NAV UPGRADE BUTTON
+   ============================================================ */
+.nav-upgrade-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--brand-primary);
+  background: transparent;
+  color: var(--brand-primary);
+  font-family: 'Satoshi', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
+}
+
+.nav-upgrade-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.nav-upgrade-btn:hover {
+  background: var(--brand-primary);
+  color: #fff;
+}
+
+/* ============================================================
+   PAYWALL GUARD
+   ============================================================ */
+.paywall-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 40px 20px;
+}
+
+.paywall-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 24px;
+  padding: 48px 40px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+.paywall-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(0, 128, 255, 0.12), rgba(0, 128, 255, 0.05));
+  color: var(--brand-primary);
+  margin-bottom: 20px;
+}
+
+.paywall-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.paywall-card h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 12px;
+}
+
+.paywall-card > p {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0 0 24px;
+}
+
+.paywall-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 28px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.paywall-features li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.paywall-features li svg {
+  width: 16px;
+  height: 16px;
+  color: var(--brand-primary);
+  flex-shrink: 0;
+}
+
+.paywall-cta {
+  width: 100%;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.paywall-note {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ============================================================
+   PRICING PAGE
+   ============================================================ */
+.pricing-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 60px 24px 80px;
+}
+
+.pricing-header {
+  text-align: center;
+  margin-bottom: 52px;
+}
+
+.pricing-header h1 {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 12px;
+}
+
+.pricing-header p {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.pricing-card {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.pricing-card:hover {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+.pricing-card--featured {
+  border-color: var(--brand-primary);
+  box-shadow: 0 4px 24px rgba(0, 128, 255, 0.12);
+}
+
+.pricing-card--featured:hover {
+  box-shadow: 0 8px 40px rgba(0, 128, 255, 0.18);
+}
+
+.pricing-card--current {
+  border-color: var(--border-medium);
+}
+
+.pricing-badge {
+  position: absolute;
+  top: -13px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--brand-primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 14px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.pricing-badge--muted {
+  background: var(--text-muted);
+}
+
+.pricing-card-header {
+  margin-bottom: 24px;
+}
+
+.pricing-plan-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 10px;
+}
+
+.pricing-price {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.pricing-amount {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.pricing-period {
+  font-size: 15px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.pricing-description {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.pricing-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pricing-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.pricing-features li svg {
+  width: 16px;
+  height: 16px;
+  color: var(--brand-primary);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.pricing-cta {
+  margin-top: auto;
+  width: 100%;
+  padding: 13px;
+  font-family: 'Satoshi', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pricing-cta.btn-outline {
+  background: transparent;
+  border: 1.5px solid var(--border-medium);
+  color: var(--text-primary);
+}
+
+.pricing-cta.btn-outline:hover:not(:disabled) {
+  border-color: var(--brand-primary);
+  color: var(--brand-primary);
+}
+
+.pricing-cta:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.pricing-footer-note {
+  text-align: center;
+  margin-top: 40px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ============================================================
+   AUTH PAGES (Login / Forgot password / Reset password)
+   ============================================================ */
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+  padding: 40px 20px;
+}
+
+.auth-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 24px;
+  padding: 48px 40px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+.auth-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(0, 128, 255, 0.12), rgba(0, 128, 255, 0.05));
+  color: var(--brand-primary);
+  margin-bottom: 20px;
+}
+
+.auth-icon--success {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.05));
+  color: #4CAF50;
+}
+
+.auth-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.auth-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+}
+
+.auth-subtitle {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0 0 28px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-forgot {
+  text-align: right;
+  margin-top: -8px;
+}
+
+.auth-submit {
+  width: 100%;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.auth-switch {
+  text-align: center;
+  margin: 20px 0 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--brand-primary);
+  font-family: 'Satoshi', sans-serif;
+  font-size: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: transparent;
+  transition: text-decoration-color 0.2s ease;
+}
+
+.link-btn:hover {
+  text-decoration-color: var(--brand-primary);
+}
+
+.hero-login-btn {
+  font-size: 15px;
+}
+
+@media (max-width: 768px) {
+  .auth-card {
+    padding: 36px 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .pricing-grid {
+    grid-template-columns: 1fr;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .pricing-card--featured {
+    order: -1;
+  }
+
+  .pricing-header h1 {
+    font-size: 28px;
+  }
+
+  .trial-banner {
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .trial-upgrade-btn {
+    margin-left: 0;
+  }
+
+  .paywall-card {
+    padding: 36px 24px;
+  }
+}
+
+/* ============================================================
+   LEGAL PAGES (Privacy / Terms)
+   ============================================================ */
+.legal-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+.legal-back {
+  margin-bottom: 32px;
+  font-size: 14px;
+}
+
+.legal-page h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+}
+
+.legal-date {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0 0 40px;
+}
+
+.legal-page section {
+  margin-bottom: 32px;
+}
+
+.legal-page h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 12px;
+}
+
+.legal-page p,
+.legal-page li {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.legal-page ul {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+
+.legal-page li {
+  margin-bottom: 6px;
+}
+
+.legal-links {
+  text-align: center;
+  margin: 16px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
 }
 

@@ -71,6 +71,20 @@ const Navigation = ({ currentUser, onLogout, isAdmin, theme, onToggleTheme }) =>
               </button>
             </>
           )}
+          {currentUser && !isAdmin && (() => {
+            const isPro = currentUser?.plan === 'pro' || currentUser?.plan === 'coach';
+            if (isPro) return null;
+            const trialActive = currentUser?.trial_ends_at && new Date(currentUser.trial_ends_at) > new Date();
+            const daysLeft = trialActive
+              ? Math.max(0, Math.ceil((new Date(currentUser.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24)))
+              : 0;
+            return (
+              <button className="nav-upgrade-btn" onClick={() => navigate('/pricing')}>
+                <Icons.Target />
+                {trialActive ? `Essai · ${daysLeft}j` : 'Passer à Pro'}
+              </button>
+            );
+          })()}
           {(currentUser || isAdmin) && (
             <button className="nav-link logout" onClick={onLogout}>
               <Icons.LogOut /> Déconnexion

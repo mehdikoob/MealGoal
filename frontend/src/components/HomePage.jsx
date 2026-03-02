@@ -1,8 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Icons from '../constants/icons';
 
 // Home Page Component
 const HomePage = ({ onStartQuestionnaire }) => {
+  const navigate = useNavigate();
+
   return (
     <div className="hero-section">
       <div className="hero-content">
@@ -17,6 +20,9 @@ const HomePage = ({ onStartQuestionnaire }) => {
         <div className="hero-buttons">
           <button className="btn-primary" onClick={onStartQuestionnaire}>
             Commencer maintenant <Icons.ArrowRight />
+          </button>
+          <button className="btn-outline hero-login-btn" onClick={() => navigate('/login')}>
+            J'ai déjà un compte
           </button>
         </div>
         <div className="hero-features">

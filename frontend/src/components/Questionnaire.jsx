@@ -11,6 +11,7 @@ const Questionnaire = ({ onComplete }) => {
   const [isCalculating, setIsCalculating] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
+    password: '',
     nom: '',
     prenom: '',
     age: '',
@@ -68,16 +69,29 @@ const Questionnaire = ({ onComplete }) => {
   };
 
   const handleSubmit = async () => {
+    if (!formData.password || formData.password.length < 8) {
+      alert('Le mot de passe doit contenir au moins 8 caractères.');
+      return;
+    }
     setIsCalculating(true);
     try {
       const response = await axios.post(`${API_URL}/api/users`, formData);
+      // API now returns { access_token, token_type, user }
+      const user = response.data.user ?? response.data;
+      if (response.data.access_token) {
+        localStorage.setItem('mealgoal_token', response.data.access_token);
+      }
       setTimeout(() => {
         setIsCalculating(false);
-        onComplete(response.data);
+        onComplete(user);
       }, 2500);
     } catch (error) {
       setIsCalculating(false);
-      alert(error.response?.data?.detail || 'Erreur lors de la création du profil');
+      const detail = error.response?.data?.detail;
+      const message = Array.isArray(detail)
+        ? detail.map(e => e.msg).join(', ')
+        : (typeof detail === 'string' ? detail : 'Erreur lors de la création du profil');
+      alert(message);
     }
   };
 
@@ -113,6 +127,21 @@ const Questionnaire = ({ onComplete }) => {
                   onChange={e => updateFormData('email', e.target.value)}
                   placeholder="votre@email.com"
                 />
+              </div>
+              <div className="form-group">
+                <label>Mot de passe *</label>
+                <input
+                  type="password"
+                  value={formData.password}
+                  onChange={e => updateFormData('password', e.target.value)}
+                  placeholder="8 caractères minimum"
+                  minLength={8}
+                />
+                {formData.password.length > 0 && formData.password.length < 8 && (
+                  <span style={{ color: '#e53e3e', fontSize: '0.8rem' }}>
+                    {formData.password.length}/8 caractères minimum
+                  </span>
+                )}
               </div>
               <div className="form-group">
                 <label>Nom *</label>

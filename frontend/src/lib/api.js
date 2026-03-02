@@ -10,6 +10,18 @@ if (!API_URL) {
   );
 }
 
+export const TOKEN_KEY = 'mealgoal_token';
+export const ADMIN_TOKEN_KEY = 'mealgoal_admin_token';
+
+// Attach JWT token to every outgoing request
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem(ADMIN_TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 // Global Axios error interceptor
 axios.interceptors.response.use(
   (response) => response,
