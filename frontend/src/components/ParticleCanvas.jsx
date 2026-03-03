@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 const PARTICLE_COUNT = 70;
-const COLORS = ['#22c55e', '#16a34a', '#86efac', '#4ade80', '#ffffff'];
+const COLORS = ['#0080ff', '#7c3aed', '#a78bfa', '#60a5fa', '#ffffff'];
 const MAX_LINK_DISTANCE = 130;
 
 function randomBetween(a, b) {
@@ -56,7 +56,7 @@ const ParticleCanvas = () => {
             ctx.beginPath();
             ctx.moveTo(pts[i].x, pts[i].y);
             ctx.lineTo(pts[j].x, pts[j].y);
-            ctx.strokeStyle = `rgba(34,197,94,${0.12 * (1 - dist / MAX_LINK_DISTANCE)})`;
+            ctx.strokeStyle = `rgba(0,128,255,${0.15 * (1 - dist / MAX_LINK_DISTANCE)})`;
             ctx.lineWidth = 0.6;
             ctx.stroke();
           }
