@@ -104,10 +104,10 @@ def verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
-def create_access_token(user_id: str) -> str:
+def create_access_token(user_id: str, expire_minutes: int = JWT_EXPIRE_MINUTES) -> str:
     payload = {
         "sub": user_id,
-        "exp": datetime.utcnow() + timedelta(minutes=JWT_EXPIRE_MINUTES),
+        "exp": datetime.utcnow() + timedelta(minutes=expire_minutes),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
@@ -227,6 +227,7 @@ class UserCreate(UserProfile):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+    remember_me: bool = False
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -1150,7 +1151,8 @@ async def login(request: Request, credentials: LoginRequest):
         logger.warning("Failed login attempt for email=%s ip=%s", credentials.email, request.client.host)
         raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
     logger.info("Successful login for user_id=%s", user["id"])
-    token = create_access_token(user["id"])
+    expire = 30 * 24 * 60 if credentials.remember_me else JWT_EXPIRE_MINUTES
+    token = create_access_token(user["id"], expire_minutes=expire)
     user_safe = {k: v for k, v in user.items() if k not in ("_id", "password_hash")}
     return TokenResponse(access_token=token, user=user_safe)
 

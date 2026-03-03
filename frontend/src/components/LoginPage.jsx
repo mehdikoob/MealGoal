@@ -9,6 +9,7 @@ const LoginPage = ({ onLogin }) => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -16,7 +17,11 @@ const LoginPage = ({ onLogin }) => {
     if (!email || !password) return;
     setLoading(true);
     try {
-      const res = await axios.post(`${API_URL}/api/auth/login`, { email, password });
+      const res = await axios.post(`${API_URL}/api/auth/login`, {
+        email,
+        password,
+        remember_me: rememberMe,
+      });
       localStorage.setItem(TOKEN_KEY, res.data.access_token);
       localStorage.setItem('mealgoal_user', JSON.stringify(res.data.user));
       toast.success('Connexion réussie !');
@@ -61,7 +66,15 @@ const LoginPage = ({ onLogin }) => {
             />
           </div>
 
-          <div className="auth-forgot">
+          <div className="auth-remember-row">
+            <label className="remember-me-label">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={e => setRememberMe(e.target.checked)}
+              />
+              <span>Rester connecté</span>
+            </label>
             <button type="button" className="link-btn" onClick={() => navigate('/forgot-password')}>
               Mot de passe oublié ?
             </button>

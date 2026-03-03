@@ -38,22 +38,6 @@ const PLANS = [
     cta: 'Passer à Pro',
     highlight: true,
   },
-  {
-    id: 'coach',
-    name: 'Coach',
-    price: '29€',
-    period: '/ mois',
-    description: 'Pour les professionnels',
-    features: [
-      'Tout ce qui est inclus dans Pro',
-      'Accès multi-clients',
-      'Dashboard coach',
-      'Rapports personnalisés',
-      'Support dédié',
-    ],
-    cta: 'Passer à Coach',
-    highlight: false,
-  },
 ];
 
 const PricingPage = ({ user }) => {
