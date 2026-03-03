@@ -3,6 +3,7 @@ import axios from 'axios';
 import { API_URL } from '../lib/api';
 import Icons from '../constants/icons';
 import { Skeleton } from './ui/skeleton';
+import { toast } from 'sonner';
 
 // Meal Plan Component
 const MealPlan = ({ user }) => {
@@ -18,7 +19,10 @@ const MealPlan = ({ user }) => {
       const response = await axios.get(`${API_URL}/api/meal-plans/${user.id}/today`);
       setMealPlan(response.data);
     } catch (error) {
-      console.error('Error fetching meal plan:', error);
+      const status = error.response?.status;
+      if (status !== 404) {
+        toast.error('Impossible de charger votre plan du jour. Vérifiez votre connexion.');
+      }
     } finally {
       setLoading(false);
     }
@@ -48,8 +52,11 @@ const MealPlan = ({ user }) => {
   if (!mealPlan) {
     return (
       <div className="error-container">
-        <p>Impossible de charger le plan alimentaire.</p>
-        <button className="btn-primary" onClick={fetchMealPlan}>Réessayer</button>
+        <p>Votre plan alimentaire n'a pas pu être chargé.</p>
+        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+          Cela peut survenir si votre plan n'a pas encore été généré, ou si une erreur réseau s'est produite.
+        </p>
+        <button className="btn-primary" onClick={fetchMealPlan} style={{ marginTop: '16px' }}>Réessayer</button>
       </div>
     );
   }

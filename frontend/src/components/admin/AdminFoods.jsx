@@ -3,6 +3,7 @@ import axios from 'axios';
 import { API_URL } from '../../lib/api';
 import Icons from '../../constants/icons';
 import { Skeleton } from '../ui/skeleton';
+import { toast } from 'sonner';
 
 // Admin Foods Component
 const AdminFoods = () => {
@@ -42,7 +43,7 @@ const AdminFoods = () => {
       const response = await axios.get(`${API_URL}/api/foods`);
       setFoods(response.data);
     } catch (error) {
-      console.error('Error fetching foods:', error);
+      toast.error('Impossible de charger la banque d\'aliments. Rechargez la page.');
     } finally {
       setLoading(false);
     }
@@ -123,7 +124,9 @@ const AdminFoods = () => {
       });
       fetchFoods();
     } catch (error) {
-      alert('Erreur lors de la sauvegarde');
+      const detail = error.response?.data?.detail;
+      const name = formData.nom || 'cet aliment';
+      toast.error(detail ?? `Impossible de sauvegarder "${name}" — vérifiez les valeurs nutritionnelles.`);
     }
   };
 
@@ -153,7 +156,8 @@ const AdminFoods = () => {
         await axios.delete(`${API_URL}/api/foods/${foodId}`);
         fetchFoods();
       } catch (error) {
-        alert('Erreur lors de la suppression');
+        const detail = error.response?.data?.detail;
+        toast.error(detail ?? 'Impossible de supprimer cet aliment — il est peut-être utilisé dans des plans existants.');
       }
     }
   };

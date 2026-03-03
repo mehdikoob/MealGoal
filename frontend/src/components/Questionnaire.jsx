@@ -3,6 +3,7 @@ import axios from 'axios';
 import { API_URL } from '../lib/api';
 import Icons from '../constants/icons';
 import LoadingAnimation from './LoadingAnimation';
+import { toast } from 'sonner';
 
 // Questionnaire Component
 const Questionnaire = ({ onComplete }) => {
@@ -89,7 +90,7 @@ const Questionnaire = ({ onComplete }) => {
 
   const handleSubmit = async () => {
     if (!formData.password || formData.password.length < 8) {
-      alert('Le mot de passe doit contenir au moins 8 caractères.');
+      toast.error('Mot de passe trop court — 8 caractères minimum requis.');
       return;
     }
     setIsCalculating(true);
@@ -109,8 +110,8 @@ const Questionnaire = ({ onComplete }) => {
       const detail = error.response?.data?.detail;
       const message = Array.isArray(detail)
         ? detail.map(e => e.msg).join(', ')
-        : (typeof detail === 'string' ? detail : 'Erreur lors de la création du profil');
-      alert(message);
+        : (typeof detail === 'string' ? detail : 'Impossible de créer votre profil. Vérifiez vos informations et réessayez.');
+      toast.error(message);
     }
   };
 

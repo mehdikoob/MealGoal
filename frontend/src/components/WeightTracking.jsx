@@ -4,6 +4,7 @@ import { API_URL } from '../lib/api';
 import Icons from '../constants/icons';
 import { Skeleton } from './ui/skeleton';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { toast } from 'sonner';
 
 // Weight Tracking Component
 const WeightTracking = ({ user }) => {
@@ -22,7 +23,7 @@ const WeightTracking = ({ user }) => {
       const response = await axios.get(`${API_URL}/api/weight-logs/${user.id}/stats`);
       setWeightStats(response.data);
     } catch (error) {
-      console.error('Error fetching weight stats:', error);
+      toast.error('Impossible de charger votre historique de poids. Vérifiez votre connexion.');
     } finally {
       setLoading(false);
     }
@@ -49,7 +50,8 @@ const WeightTracking = ({ user }) => {
       setNewWeight('');
       fetchWeightStats();
     } catch (error) {
-      alert('Erreur lors de l\'enregistrement du poids');
+      const detail = error.response?.data?.detail;
+      toast.error(detail ?? 'Poids non enregistré — vérifiez la valeur saisie et réessayez.');
     }
   };
 

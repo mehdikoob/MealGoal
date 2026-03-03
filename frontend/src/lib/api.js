@@ -25,17 +25,16 @@ axios.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status;
-    if (status === 0 || !error.response) {
-      toast.error('Impossible de contacter le serveur. Vérifiez votre connexion.');
+    if (!error.response) {
+      toast.error('Serveur inaccessible — vérifiez votre connexion internet.');
     } else if (status >= 500) {
-      toast.error('Erreur serveur. Veuillez réessayer.');
+      toast.error('Erreur serveur inattendue. Réessayez dans quelques instants.');
     } else if (status === 401) {
-      toast.error('Session expirée. Veuillez vous reconnecter.');
+      toast.error('Session expirée — reconnectez-vous pour continuer.');
     } else if (status === 403) {
-      toast.error('Accès refusé.');
-    } else if (status === 404) {
-      // Let components handle 404s silently
+      toast.error("Vous n'avez pas les droits pour effectuer cette action.");
     }
+    // 404 et autres 4xx : gérés par chaque composant
     return Promise.reject(error);
   }
 );

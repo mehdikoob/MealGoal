@@ -3,6 +3,7 @@ import axios from 'axios';
 import { API_URL } from '../../lib/api';
 import Icons from '../../constants/icons';
 import { Skeleton } from '../ui/skeleton';
+import { toast } from 'sonner';
 
 // Admin Users Component
 const AdminUsers = () => {
@@ -27,7 +28,7 @@ const AdminUsers = () => {
       const response = await axios.get(`${API_URL}/api/admin/users`);
       setUsers(response.data);
     } catch (error) {
-      console.error('Error fetching users:', error);
+      toast.error('Impossible de charger la liste des clients. Rechargez la page.');
     } finally {
       setLoading(false);
     }
@@ -46,7 +47,8 @@ const AdminUsers = () => {
         setSelectedUser(null);
       }
     } catch (error) {
-      alert('Erreur lors de la suppression');
+      const detail = error.response?.data?.detail;
+      toast.error(detail ?? `Impossible de supprimer le compte de ${userName}. Réessayez.`);
     }
   };
 
@@ -98,7 +100,8 @@ const AdminUsers = () => {
       setUsers(users.map(u => u.id === selectedUser.id ? updatedUserData : u));
       setShowEditModal(false);
     } catch (error) {
-      alert('Erreur lors de la mise à jour');
+      const detail = error.response?.data?.detail;
+      toast.error(detail ?? 'Modifications non sauvegardées — vérifiez les données saisies.');
     } finally {
       setSaving(false);
     }

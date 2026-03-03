@@ -3,6 +3,7 @@ import axios from 'axios';
 import { API_URL } from '../../lib/api';
 import Icons from '../../constants/icons';
 import { Skeleton } from '../ui/skeleton';
+import { toast } from 'sonner';
 
 // Admin Meal Plans Component
 const AdminMealPlans = () => {
@@ -26,7 +27,7 @@ const AdminMealPlans = () => {
       const response = await axios.get(`${API_URL}/api/admin/users`);
       setUsers(response.data);
     } catch (error) {
-      console.error('Error fetching users:', error);
+      toast.error('Impossible de charger la liste des clients. Rechargez la page.');
     } finally {
       setLoading(false);
     }
@@ -37,7 +38,7 @@ const AdminMealPlans = () => {
       const response = await axios.get(`${API_URL}/api/foods`);
       setFoods(response.data);
     } catch (error) {
-      console.error('Error fetching foods:', error);
+      toast.error('Impossible de charger la banque d\'aliments.');
     }
   };
 
@@ -46,7 +47,7 @@ const AdminMealPlans = () => {
       const response = await axios.get(`${API_URL}/api/meal-plans/${userId}?limit=30`);
       setMealPlans(response.data);
     } catch (error) {
-      console.error('Error fetching meal plans:', error);
+      toast.error('Impossible de charger les plans de cet utilisateur.');
     }
   };
 
@@ -117,7 +118,8 @@ const AdminMealPlans = () => {
       setShowEditModal(false);
       setEditingMeal(null);
     } catch (error) {
-      alert('Erreur lors de la sauvegarde');
+      const detail = error.response?.data?.detail;
+      toast.error(detail ?? 'Repas non sauvegardé — réessayez ou vérifiez votre connexion.');
     }
   };
 
@@ -132,7 +134,8 @@ const AdminMealPlans = () => {
       setSelectedPlan(response.data);
       fetchUserPlans(selectedUser.id);
     } catch (error) {
-      alert('Erreur lors de la régénération');
+      const detail = error.response?.data?.detail;
+      toast.error(detail ?? 'Échec de la régénération — le profil utilisateur est peut-être incomplet.');
     }
   };
 
