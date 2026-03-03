@@ -104,6 +104,7 @@ function App() {
           isAdmin={isAdmin}
           theme={theme}
           onToggleTheme={handleToggleTheme}
+          onGoHome={() => setShowQuestionnaire(false)}
         />
 
         <main className="main-content">

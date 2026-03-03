@@ -3,13 +3,18 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Icons from '../constants/icons';
 
 // Navigation Component
-const Navigation = ({ currentUser, onLogout, isAdmin, theme, onToggleTheme }) => {
+const Navigation = ({ currentUser, onLogout, isAdmin, theme, onToggleTheme, onGoHome }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const handleBrandClick = () => {
+    if (onGoHome) onGoHome();
+    navigate('/');
+  };
+
   return (
     <nav className="nav-header">
-      <div className="nav-brand" onClick={() => navigate('/')}>
+      <div className="nav-brand" onClick={handleBrandClick}>
         <span className="brand-icon"><Icons.Target /></span>
         <span className="brand-text">MealGoal</span>
       </div>
