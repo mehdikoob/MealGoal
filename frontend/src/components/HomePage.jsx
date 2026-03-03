@@ -10,20 +10,20 @@ const STEPS = [
   {
     number: '01',
     icon: <Icons.User />,
-    title: 'Remplis ton profil',
+    title: 'Remplissez votre profil',
     desc: 'Âge, objectif, préférences alimentaires, rythme de vie — 5 minutes suffisent.',
   },
   {
     number: '02',
     icon: <Icons.Target />,
-    title: 'On calcule ton plan',
-    desc: 'Notre algorithme génère un plan sur-mesure respectant tes macros et tes goûts.',
+    title: 'Nous calculons votre plan',
+    desc: 'Notre algorithme génère un plan sur-mesure respectant vos macros et vos goûts.',
   },
   {
     number: '03',
     icon: <Icons.TrendingUp />,
-    title: 'Tu progresses',
-    desc: 'Suis ton évolution semaine après semaine et ajuste ton plan en temps réel.',
+    title: 'Vous progressez',
+    desc: 'Suivez votre évolution semaine après semaine et ajustez votre plan en temps réel.',
   },
 ];
 
@@ -31,7 +31,7 @@ const FEATURES = [
   {
     icon: <Icons.Utensils />,
     title: 'Plans alimentaires sur mesure',
-    desc: 'Générés chaque jour en fonction de tes objectifs, tes préférences et ton mode de vie.',
+    desc: 'Générés chaque jour en fonction de vos objectifs, vos préférences et votre mode de vie.',
   },
   {
     icon: <Icons.Target />,
@@ -41,28 +41,34 @@ const FEATURES = [
   {
     icon: <Icons.TrendingUp />,
     title: 'Suivi du poids',
-    desc: "Courbes d'évolution, tendances, et alertes si tu t'écartes de ta trajectoire.",
+    desc: "Courbes d'évolution, tendances, et alertes si vous vous écartez de votre trajectoire.",
   },
   {
     icon: <Icons.Calendar />,
     title: 'Historique complet',
-    desc: 'Tous tes plans archivés, consultables et comparables à tout moment.',
+    desc: 'Tous vos plans archivés, consultables et comparables à tout moment.',
   },
 ];
 
 const GOALS = [
   {
-    emoji: '🔥',
+    icon: <Icons.TrendingDown />,
+    color: '#ef4444',
+    colorBg: 'rgba(239, 68, 68, 0.1)',
     title: 'Perte de gras',
     desc: 'Déficit calorique intelligent, protéines hautes pour préserver la masse musculaire.',
   },
   {
-    emoji: '💪',
+    icon: <Icons.TrendingUp />,
+    color: 'var(--brand-primary)',
+    colorBg: 'rgba(0, 128, 255, 0.1)',
     title: 'Prise de muscle',
     desc: 'Surplus contrôlé, fenêtres anaboliques respectées, sources de qualité.',
   },
   {
-    emoji: '⚖️',
+    icon: <Icons.Target />,
+    color: '#7c3aed',
+    colorBg: 'rgba(124, 58, 237, 0.1)',
     title: 'Maintien',
     desc: 'Équilibre durable, variété alimentaire, plaisir sans culpabilité.',
   },
@@ -97,7 +103,9 @@ const GoalCard = ({ goal, side }) => {
   const ref = useScrollReveal();
   return (
     <div ref={ref} className={`reveal ${side === 'left' ? 'reveal-left' : 'reveal-right'} goal-card`}>
-      <span className="goal-emoji">{goal.emoji}</span>
+      <div className="goal-icon-wrap" style={{ background: goal.colorBg, color: goal.color }}>
+        {goal.icon}
+      </div>
       <div>
         <h3>{goal.title}</h3>
         <p>{goal.desc}</p>

@@ -596,12 +596,16 @@ body {
 }
 
 /* ── Steps ──────────────────────────────────────── */
-.home-steps { background: var(--bg-page); }
+/* Dégradé de transition hero (sombre) → section (clair) */
+.home-steps { background: linear-gradient(to bottom, #07091a 0px, var(--bg-page) 90px); }
 
 .steps-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 32px;
+}
+@media (max-width: 768px) {
+  .steps-grid { grid-template-columns: 1fr; }
 }
 
 .step-card {
@@ -713,12 +717,17 @@ body {
   padding: 24px 28px;
 }
 
-.goal-emoji {
-  font-size: 32px;
+.goal-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  line-height: 1;
   margin-top: 2px;
 }
+.goal-icon-wrap svg { width: 22px; height: 22px; }
 
 .goal-card h3 {
   font-size: 17px;
